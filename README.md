@@ -8,8 +8,8 @@ knowledge graph, and explored on a canvas where you can lay out, expand and
 annotate the network. Data arrives from registry APIs, uploaded documents and
 language-model extraction — and nothing enters the database until you accept it.
 
-> **Status: early development.** Milestones M0 (skeleton) and M1 (ontology)
-> are complete.
+> **Status: early development.** Milestones M0 (skeleton), M1 (ontology) and
+> M2 (graph store) are complete.
 > See [docs/decisions.md](docs/decisions.md) for the design rationale.
 
 ## Design in one minute
@@ -112,13 +112,64 @@ Breaking (1) — existing data needs migrating:
 
 It exits non-zero when a change is breaking.
 
+## The graph store
+
+Every relationship is derived from an **assertion** recording where the claim
+came from, with what confidence, by what method. Creating one is the only way
+an edge enters the graph:
+
+```python
+assertion, edge = await repository.assert_relationship(
+    predicate="OWNS",
+    subject_id=person.id,
+    object_id=company.id,
+    source_id=document.id,          # the evidence
+    method=ExtractionMethod.LANGUAGE_MODEL,
+    confidence=0.85,
+    valid_from=date(2019, 3, 1),    # when it became true
+)
+```
+
+An edge exists exactly while at least one assertion supports it. Two documents
+saying the same thing produce one edge with two supporting claims; retracting
+either leaves the edge standing, and retracting the last removes it.
+
+Expansion hides sources unless asked, filters by relationship type, and answers
+as of a date:
+
+```python
+await repository.expand([person.id], depth=2, as_of=date(2020, 1, 1))
+```
+
+### Removing things
+
+Three distinct operations, only two of which live here:
+
+| Operation | Effect |
+|---|---|
+| Remove from chart | Application store only; the graph is untouched |
+| `suppress_entity` | Tombstone: hidden from every query, and re-ingestion will not resurrect it |
+| `delete_entity` | Gone, with its edges and the assertions about it. Sources survive |
+
+### Duplicates
+
+`IdentityResolver` proposes, and never merges. Two entities sharing an
+identifier — or agreeing on a property the ontology declares as a strong
+identifier — get a `SAME_AS` relationship with status `candidate`. A human
+confirms or rejects; a decision already recorded is never overwritten by
+re-running detection, and confirming still does not merge the nodes.
+
 ## Development
 
 ```bash
-pytest              # unit tests, no database required
+pytest              # graph tests skip automatically when Neo4j is not running
 ruff check .        # lint
 ruff format .       # format
 ```
+
+Tests that need a database use the `repository` fixture, which skips when none
+is reachable, so a fresh clone runs green without Docker. Start Neo4j with
+`docker compose up -d` to exercise them.
 
 ## Roadmap
 
@@ -126,8 +177,8 @@ ruff format .       # format
 |---|---|---|
 | **M0** | Project skeleton, Neo4j via Docker, health check | ✅ Done |
 | **M1** | Ontology file, validation, code generation | ✅ Done |
-| **M2** | Graph store, assertion layer, temporal queries, `SAME_AS` detection | Next |
-| **M3** | Canvas: icons, drag, multi-select, layouts over selections | |
+| **M2** | Graph store, assertion layer, temporal queries, `SAME_AS` detection | ✅ Done |
+| **M3** | Canvas: icons, drag, multi-select, layouts over selections | Next |
 | **M4** | Context menu, expand from database, staging and review, first registry connectors | |
 | M5 | Language-model transforms: online search, registry routing | Deferred |
 | M6 | Document and spreadsheet ingestion with ontology mapping | Deferred |

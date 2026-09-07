@@ -57,6 +57,12 @@ linked by `HAS_IDENTIFIER`), which makes duplicate detection a single Cypher
 query over entities sharing an identifier, and gives identifiers their own
 provenance.
 
+Those nodes are **canonical**: keyed by `(scheme, value)` rather than by a fresh
+UUID, enforced by a uniqueness constraint. Two companies bearing the same LEI
+therefore point at the *same* node, and the candidate query is one hop. Minting
+a node per mention would leave nothing shared and detection would never fire —
+which is exactly what the first version did until a test caught it.
+
 Matches are **never merged automatically.** They produce a `SAME_AS` candidate
 that enters the review queue. A human confirms or rejects. Hard merges destroy
 provenance and cannot be undone; in due-diligence work a false merge is a
@@ -163,3 +169,23 @@ no way to express intent; the migration note says so explicitly.
 
 Nodes record the ontology version they were written under, so a migration can
 find the ones it still has to convert.
+
+
+## 13. The assertion layer is invisible to the canvas
+
+Assertions are wired to entities by `SUBJECT`, `OBJECT` and `DERIVED_FROM`
+relationships. Expansion must never traverse them: an `:Assertion` is not an
+entity, has no ontology type, and would appear on the canvas as a meaningless
+node.
+
+So expansion names the relationship types it will follow — every type the
+ontology declares, and nothing else — rather than following whatever edges
+exist. Combined with requiring every node on the path to carry `:Thing`, the
+provenance layer stays queryable but out of sight.
+
+## 14. Expansion is capped, and says when it capped
+
+A registered-agent address can have thousands of companies attached. Returning
+them all would stall the browser and tell the analyst nothing, so `expand()`
+takes a limit, defaulting to 500 edges, and sets `truncated` when it stops
+short. `degree()` lets the interface warn before running the expansion at all.

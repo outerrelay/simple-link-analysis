@@ -7,6 +7,7 @@ Run locally with::
 
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -16,6 +17,9 @@ from sla import __version__
 from sla.api import health, ontology
 from sla.config import get_settings
 from sla.graph import driver as graph_driver
+from sla.graph import schema
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -25,8 +29,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     Connecting lazily here rather than verifying the connection means the app
     still starts when Neo4j is down; ``/health`` then reports it as degraded,
     which is friendlier than a crash loop during development.
+
+    When the database *is* reachable, the ontology's constraints and indexes
+    are applied. They are idempotent, so this keeps a development database in
+    step with the ontology on the current branch — for additive changes.
+    A breaking change still needs the migration ``sla-ontology diff`` describes.
     """
-    await graph_driver.connect(get_settings())
+    settings = get_settings()
+    driver = await graph_driver.connect(settings)
+    try:
+        await schema.apply(driver, settings.neo4j_database)
+    except Exception as exc:  # noqa: BLE001 - /health reports the detail
+        logger.warning("could not apply graph schema: %s", exc)
     try:
         yield
     finally:

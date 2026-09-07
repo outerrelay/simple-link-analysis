@@ -22,10 +22,12 @@ CREATE INDEX assertion_status IF NOT EXISTS
 FOR (a:Assertion) ON (a.status);
 
 // --- Duplicate detection ------------------------------------------
-// Backs the query that proposes SAME_AS candidates for two entities
-// bearing the same identifier.
-CREATE INDEX identifier_scheme_value IF NOT EXISTS
-FOR (n:Identifier) ON (n.scheme, n.value);
+// Identifier nodes are canonical: one node per (scheme, value), so two
+// entities bearing the same identifier point at the *same* node and the
+// SAME_AS candidate query is a single hop. Uniqueness enforces that, and
+// its backing index makes the lookup cheap.
+CREATE CONSTRAINT identifier_scheme_value_unique IF NOT EXISTS
+FOR (n:Identifier) REQUIRE (n.scheme, n.value) IS UNIQUE;
 
 // --- Property indexes ---------------------------------------------
 CREATE INDEX address_city IF NOT EXISTS

@@ -138,10 +138,11 @@ def test_cypher_constrains_id_uniqueness_on_the_root_label() -> None:
     assert "FOR (n:Thing) REQUIRE n.id IS UNIQUE" in cypher
 
 
-def test_cypher_indexes_the_identifier_pair_for_duplicate_detection() -> None:
+def test_cypher_makes_identifiers_canonical() -> None:
+    """One node per (scheme, value), so two entities sharing an LEI share a node."""
     cypher = rendered(".cypher")
 
-    assert "FOR (n:Identifier) ON (n.scheme, n.value)" in cypher
+    assert "FOR (n:Identifier) REQUIRE (n.scheme, n.value) IS UNIQUE" in cypher
 
 
 def test_cypher_statements_are_idempotent() -> None:
