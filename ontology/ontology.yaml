@@ -1,0 +1,922 @@
+# =====================================================================
+# Simple Link Analysis — domain ontology
+#
+# This file is the single source of truth for the data model. Editing it
+# and running `sla-ontology generate` regenerates the Pydantic models,
+# JSON Schema and Neo4j constraints; the canvas reads the ontology from
+# the API at runtime.
+#
+# Additive changes (new type, new optional property) are safe to apply.
+# Renaming, removing or retyping anything already stored is a breaking
+# change: `sla-ontology diff` will say so and a migration is required.
+# =====================================================================
+
+version: 0.1.0
+name: Simple Link Analysis Ontology
+description: >-
+  An ontology for corporate and individual due diligence: who owns what,
+  who controls whom, where they are, and which source told us so.
+
+# ---------------------------------------------------------------------
+# Entity types
+#
+# Abstract types exist so relationships can name a family of types
+# ("any LegalEntity") instead of enumerating every subtype. They are
+# never instantiated; concrete types inherit their properties.
+# ---------------------------------------------------------------------
+entity_types:
+
+  Thing:
+    label: Thing
+    plural: Things
+    description: Root type. Every entity carries these properties.
+    abstract: true
+    properties:
+      name:
+        type: string
+        description: Primary display name for the entity.
+        required: true
+        indexed: true
+      aliases:
+        type: string
+        description: Alternative names, transliterations and former names.
+        multi: true
+      notes:
+        type: text
+        description: Free-text analyst notes.
+
+  # --- Actors --------------------------------------------------------
+
+  LegalEntity:
+    label: Legal entity
+    plural: Legal entities
+    description: Anything with legal personality that can own or contract.
+    abstract: true
+    extends: Thing
+    properties:
+      jurisdiction:
+        type: country
+        description: Country whose law the entity is constituted under.
+        indexed: true
+      registration_number:
+        type: string
+        description: Identifier issued by the registering authority.
+        indexed: true
+      incorporation_date:
+        type: date
+        description: Date the entity came into existence.
+      dissolution_date:
+        type: date
+        description: Date the entity ceased to exist, if it has.
+      status:
+        type: enum
+        description: Lifecycle status as reported by the registry.
+        enum: [active, dissolved, liquidation, dormant, unknown]
+
+  Person:
+    label: Person
+    plural: People
+    description: A natural person.
+    extends: Thing
+    ftm: Person
+    icon: person.svg
+    color: "#4E79A7"
+    display_name: "{name}"
+    properties:
+      first_name:
+        type: string
+        description: Given name.
+        pii: true
+      last_name:
+        type: string
+        description: Family name.
+        pii: true
+        indexed: true
+      birth_date:
+        type: date
+        description: Date of birth.
+        pii: true
+      death_date:
+        type: date
+        description: Date of death, if known.
+        pii: true
+      nationality:
+        type: country
+        description: Citizenships held.
+        multi: true
+      gender:
+        type: enum
+        enum: [female, male, other, unknown]
+        description: Gender as recorded by the source.
+        pii: true
+      title:
+        type: string
+        description: Honorific or academic title.
+      position:
+        type: string
+        description: Public role, used chiefly to flag politically exposed persons.
+        multi: true
+    # No property-level identifiers: a person's strong identifiers (passport,
+    # national ID) are Identifier nodes reached via HAS_IDENTIFIER, so they can
+    # be multi-valued and carry their own provenance.
+
+  Company:
+    label: Company
+    plural: Companies
+    description: An incorporated commercial entity.
+    extends: LegalEntity
+    ftm: Company
+    icon: company.svg
+    color: "#F28E2B"
+    display_name: "{name}"
+    properties:
+      legal_form:
+        type: string
+        description: Legal form as stated by the registry, e.g. GmbH, Ltd, AS.
+      sector:
+        type: string
+        description: Industry classification.
+        multi: true
+    identifiers: [registration_number]
+
+  Organisation:
+    label: Organisation
+    plural: Organisations
+    description: >-
+      A body that is not a commercial company: public authority, NGO,
+      political party, association or similar.
+    extends: LegalEntity
+    ftm: Organization
+    icon: organisation.svg
+    color: "#B07AA1"
+    display_name: "{name}"
+    properties:
+      category:
+        type: enum
+        enum: [public_body, ngo, political_party, association, religious, other]
+        description: Kind of organisation.
+    identifiers: [registration_number]
+
+  # --- Identity and contact points -----------------------------------
+  # These are nodes rather than properties precisely because two entities
+  # sharing one is the signal link analysis exists to surface.
+
+  Identifier:
+    label: Identifier
+    plural: Identifiers
+    description: >-
+      A strong identifier issued by an authority. Modelled as a node so
+      that two entities bearing the same one can be detected as duplicate
+      candidates by a single query.
+    extends: Thing
+    icon: identifier.svg
+    color: "#9C755F"
+    display_name: "{scheme}:{value}"
+    properties:
+      scheme:
+        type: string
+        description: Issuing scheme, e.g. lei, orgnr, companies_house, passport.
+        required: true
+        indexed: true
+      value:
+        type: string
+        description: The identifier itself, normalised.
+        required: true
+        indexed: true
+      authority:
+        type: string
+        description: Body that issued it.
+
+  Address:
+    label: Address
+    plural: Addresses
+    description: A postal address.
+    extends: Thing
+    ftm: Address
+    icon: address.svg
+    color: "#76B7B2"
+    display_name: "{name}"
+    properties:
+      street:
+        type: string
+        description: Street and number.
+        pii: true
+      city:
+        type: string
+        description: City or town.
+        indexed: true
+      postal_code:
+        type: string
+        description: Postal or ZIP code.
+      region:
+        type: string
+        description: State, province or county.
+      country:
+        type: country
+        description: Country.
+        indexed: true
+      latitude:
+        type: number
+        description: Decimal degrees north.
+      longitude:
+        type: number
+        description: Decimal degrees east.
+
+  PhoneNumber:
+    label: Phone number
+    plural: Phone numbers
+    description: A telephone number, stored in E.164 form where possible.
+    extends: Thing
+    icon: phone.svg
+    color: "#8CD17D"
+    display_name: "{name}"
+    properties:
+      country:
+        type: country
+        description: Country the number is registered in.
+      line_type:
+        type: enum
+        enum: [mobile, landline, voip, fax, unknown]
+        description: Kind of line.
+
+  EmailAddress:
+    label: Email address
+    plural: Email addresses
+    description: An email address.
+    extends: Thing
+    icon: email.svg
+    color: "#8CD17D"
+    display_name: "{name}"
+    properties:
+      domain:
+        type: string
+        description: Domain part, indexed so shared domains are findable.
+        indexed: true
+
+  Website:
+    label: Website
+    plural: Websites
+    description: A website or web domain.
+    extends: Thing
+    icon: website.svg
+    color: "#8CD17D"
+    display_name: "{name}"
+    properties:
+      url:
+        type: url
+        description: Canonical URL.
+        required: true
+      domain:
+        type: string
+        description: Registered domain.
+        indexed: true
+
+  # --- Assets --------------------------------------------------------
+
+  Asset:
+    label: Asset
+    plural: Assets
+    description: Something of value that can be owned.
+    abstract: true
+    extends: Thing
+    properties:
+      value_amount:
+        type: number
+        description: Most recent known value.
+      value_currency:
+        type: currency
+        description: Currency of the value.
+      valuation_date:
+        type: date
+        description: Date the value was assessed.
+
+  BankAccount:
+    label: Bank account
+    plural: Bank accounts
+    description: An account held at a financial institution.
+    extends: Asset
+    ftm: BankAccount
+    icon: bank-account.svg
+    color: "#59A14F"
+    display_name: "{name}"
+    properties:
+      iban:
+        type: string
+        description: International bank account number.
+        indexed: true
+        pii: true
+      bic:
+        type: string
+        description: SWIFT/BIC code of the institution.
+      bank_name:
+        type: string
+        description: Name of the institution.
+      currency:
+        type: currency
+        description: Denominating currency.
+    identifiers: [iban]
+
+  RealEstate:
+    label: Real estate
+    plural: Real estate
+    description: Land or buildings.
+    extends: Asset
+    ftm: RealEstate
+    icon: real-estate.svg
+    color: "#59A14F"
+    display_name: "{name}"
+    properties:
+      cadastral_reference:
+        type: string
+        description: Land registry reference.
+        indexed: true
+      area_sqm:
+        type: number
+        description: Area in square metres.
+      property_type:
+        type: string
+        description: Residential, commercial, agricultural and so on.
+    identifiers: [cadastral_reference]
+
+  Vessel:
+    label: Vessel
+    plural: Vessels
+    description: A ship. Relevant to sanctions and trade investigations.
+    extends: Asset
+    ftm: Vessel
+    icon: vessel.svg
+    color: "#59A14F"
+    display_name: "{name}"
+    properties:
+      imo_number:
+        type: string
+        description: IMO ship identification number.
+        indexed: true
+      flag:
+        type: country
+        description: Country of registration.
+      tonnage:
+        type: number
+        description: Gross tonnage.
+      call_sign:
+        type: string
+        description: Radio call sign.
+    identifiers: [imo_number]
+
+  # --- Sources -------------------------------------------------------
+  # Everything that can support a claim. Excluded from canvas expansion
+  # by default so documents do not crowd out the network.
+
+  Source:
+    label: Source
+    plural: Sources
+    description: Anything that can be cited as evidence for a claim.
+    abstract: true
+    extends: Thing
+    properties:
+      retrieved_at:
+        type: datetime
+        description: When this source was captured.
+        required: true
+      content_hash:
+        type: string
+        description: SHA-256 of the stored content, for deduplication.
+        indexed: true
+
+  Document:
+    label: Document
+    plural: Documents
+    description: An uploaded file — PDF, Word, spreadsheet or similar.
+    extends: Source
+    ftm: Document
+    icon: document.svg
+    color: "#BAB0AC"
+    display_name: "{name}"
+    properties:
+      filename:
+        type: string
+        description: Original filename as uploaded.
+      media_type:
+        type: string
+        description: IANA media type.
+      page_count:
+        type: integer
+        description: Number of pages, where applicable.
+      published_date:
+        type: date
+        description: Date the document itself is dated.
+      author:
+        type: string
+        description: Stated author.
+    identifiers: [content_hash]
+
+  WebPage:
+    label: Web page
+    plural: Web pages
+    description: A page captured from the web.
+    extends: Source
+    icon: web-page.svg
+    color: "#BAB0AC"
+    display_name: "{name}"
+    properties:
+      url:
+        type: url
+        description: Address the page was retrieved from.
+        required: true
+        indexed: true
+
+  NewsArticle:
+    label: News article
+    plural: News articles
+    description: A journalistic article, typically found by online search.
+    extends: Source
+    icon: news-article.svg
+    color: "#BAB0AC"
+    display_name: "{name}"
+    properties:
+      url:
+        type: url
+        description: Address of the article.
+        required: true
+        indexed: true
+      publication:
+        type: string
+        description: Outlet that published it.
+      published_date:
+        type: date
+        description: Publication date.
+      author:
+        type: string
+        description: Byline.
+      summary:
+        type: text
+        description: Summary of the article's relevance.
+      language:
+        type: string
+        description: ISO 639-1 language code.
+
+  ApiRecord:
+    label: API record
+    plural: API records
+    description: >-
+      A response from a registry or data provider, retained so that any
+      claim derived from it can be re-checked against what was returned.
+    extends: Source
+    icon: api-record.svg
+    color: "#BAB0AC"
+    display_name: "{name}"
+    properties:
+      provider:
+        type: string
+        description: Data provider, e.g. companies_house, gleif.
+        required: true
+        indexed: true
+      endpoint:
+        type: string
+        description: Endpoint or query that produced the record.
+      query:
+        type: text
+        description: Parameters used.
+
+  # --- Events and proceedings ----------------------------------------
+
+  PublicTender:
+    label: Public tender
+    plural: Public tenders
+    description: A public procurement notice or contract award.
+    extends: Thing
+    icon: tender.svg
+    color: "#EDC948"
+    display_name: "{name}"
+    properties:
+      reference:
+        type: string
+        description: Notice reference issued by the procurement portal.
+        indexed: true
+      published_date:
+        type: date
+        description: Date of publication.
+      estimated_amount:
+        type: number
+        description: Estimated contract value.
+      currency:
+        type: currency
+        description: Currency of the estimate.
+      cpv_codes:
+        type: string
+        description: Common Procurement Vocabulary codes.
+        multi: true
+      procedure_type:
+        type: string
+        description: Procurement procedure used.
+    identifiers: [reference]
+
+  SanctionsListing:
+    label: Sanctions listing
+    plural: Sanctions listings
+    description: An entry on a sanctions or watch list.
+    extends: Thing
+    ftm: Sanction
+    icon: sanction.svg
+    color: "#E15759"
+    display_name: "{name}"
+    properties:
+      authority:
+        type: string
+        description: Issuing authority, e.g. OFAC, EU, UK OFSI.
+        required: true
+        indexed: true
+      programme:
+        type: string
+        description: Sanctions programme.
+      listed_date:
+        type: date
+        description: Date the listing took effect.
+      delisted_date:
+        type: date
+        description: Date the listing was lifted, if it has been.
+      reason:
+        type: text
+        description: Stated grounds for listing.
+
+  LegalCase:
+    label: Legal case
+    plural: Legal cases
+    description: Court or regulatory proceedings.
+    extends: Thing
+    icon: legal-case.svg
+    color: "#E15759"
+    display_name: "{name}"
+    properties:
+      case_number:
+        type: string
+        description: Docket or case reference.
+        indexed: true
+      court:
+        type: string
+        description: Court or tribunal.
+      jurisdiction:
+        type: country
+        description: Jurisdiction hearing the case.
+      filed_date:
+        type: date
+        description: Date proceedings began.
+      case_type:
+        type: enum
+        enum: [criminal, civil, administrative, insolvency, regulatory, unknown]
+        description: Nature of the proceedings.
+      status:
+        type: enum
+        enum: [open, closed, appealed, settled, unknown]
+        description: Current status.
+      outcome:
+        type: text
+        description: Outcome, where concluded.
+    identifiers: [case_number]
+
+  Transaction:
+    label: Transaction
+    plural: Transactions
+    description: >-
+      A transfer of value. Modelled as a node rather than an edge so that
+      payer, payee and supporting documents can all attach to it.
+    extends: Thing
+    ftm: Payment
+    icon: transaction.svg
+    color: "#FF9DA7"
+    display_name: "{name}"
+    properties:
+      amount:
+        type: number
+        description: Amount transferred.
+        required: true
+      currency:
+        type: currency
+        description: Currency of the amount.
+        required: true
+      transaction_date:
+        type: date
+        description: Date of the transfer.
+      purpose:
+        type: text
+        description: Stated purpose or reference.
+
+# ---------------------------------------------------------------------
+# Relationship types
+#
+# `source` and `target` may name abstract types, which admits any
+# concrete subtype. `temporal: true` gives the relationship validity
+# dates; every relationship records when it was observed regardless.
+# ---------------------------------------------------------------------
+relationship_types:
+
+  # --- Ownership and control -----------------------------------------
+
+  OWNS:
+    label: owns
+    description: Holds an ownership interest in an asset or entity.
+    ftm: Ownership
+    source: [Person, LegalEntity]
+    target: [LegalEntity, Asset]
+    temporal: true
+    properties:
+      percentage:
+        type: number
+        description: Percentage of the holding, where known.
+      share_class:
+        type: string
+        description: Class of shares held.
+
+  BENEFICIAL_OWNER_OF:
+    label: is beneficial owner of
+    description: >-
+      Ultimately benefits from or controls the entity, whether or not the
+      holding is direct.
+    source: [Person]
+    target: [LegalEntity]
+    temporal: true
+    properties:
+      percentage:
+        type: number
+        description: Percentage beneficially held.
+      nature_of_control:
+        type: string
+        description: How control is exercised, as reported by the registry.
+        multi: true
+
+  PARENT_OF:
+    label: is parent of
+    description: Sits directly above another entity in a corporate group.
+    source: [LegalEntity]
+    target: [LegalEntity]
+    temporal: true
+
+  CONTROLS:
+    label: controls
+    description: Exercises control by means other than shareholding.
+    source: [Person, LegalEntity]
+    target: [LegalEntity, Asset]
+    temporal: true
+    properties:
+      basis:
+        type: string
+        description: Basis of control, e.g. voting agreement, golden share.
+
+  # --- Roles ---------------------------------------------------------
+
+  DIRECTOR_OF:
+    label: is director of
+    description: Serves on the board or as a statutory officer.
+    ftm: Directorship
+    source: [Person, LegalEntity]
+    target: [LegalEntity]
+    temporal: true
+    properties:
+      role:
+        type: string
+        description: Role as stated by the registry, e.g. geschäftsführer.
+      appointed_by:
+        type: string
+        description: Body that made the appointment.
+
+  EMPLOYED_BY:
+    label: is employed by
+    description: Works for the entity.
+    ftm: Employment
+    source: [Person]
+    target: [LegalEntity]
+    temporal: true
+    properties:
+      job_title:
+        type: string
+        description: Job title.
+
+  MEMBER_OF:
+    label: is member of
+    description: Belongs to an organisation.
+    ftm: Membership
+    source: [Person, LegalEntity]
+    target: [Organisation]
+    temporal: true
+    properties:
+      role:
+        type: string
+        description: Role within the organisation.
+
+  # --- Personal and business association ------------------------------
+
+  FAMILY_OF:
+    label: is family of
+    description: Related by blood, marriage or partnership.
+    ftm: Family
+    source: [Person]
+    target: [Person]
+    directed: false
+    symmetric: true
+    temporal: true
+    properties:
+      relationship:
+        type: string
+        description: Nature of the tie, e.g. spouse, sibling, parent.
+
+  ASSOCIATE_OF:
+    label: is associate of
+    description: >-
+      Known connection that is not familial, employment or ownership.
+      Deliberately loose; use a more specific type where one fits.
+    ftm: Associate
+    source: [Person, LegalEntity]
+    target: [Person, LegalEntity]
+    directed: false
+    symmetric: true
+    temporal: true
+    properties:
+      basis:
+        type: string
+        description: What the association rests on.
+
+  # --- Location, contact and identity ---------------------------------
+
+  RESIDES_AT:
+    label: resides at
+    description: Lives at the address.
+    source: [Person]
+    target: [Address]
+    temporal: true
+
+  REGISTERED_AT:
+    label: is registered at
+    description: Has its registered or business address here.
+    source: [LegalEntity]
+    target: [Address]
+    temporal: true
+    properties:
+      address_type:
+        type: enum
+        enum: [registered, trading, correspondence, branch]
+        description: Which kind of address this is.
+
+  LOCATED_AT:
+    label: is located at
+    description: Physically situated at the address.
+    source: [Asset]
+    target: [Address]
+    temporal: true
+
+  HAS_IDENTIFIER:
+    label: has identifier
+    description: >-
+      Bears an identifier issued by an authority. Two entities sharing an
+      identifier are proposed as duplicate candidates.
+    source: [Person, LegalEntity, Asset]
+    target: [Identifier]
+    temporal: true
+
+  HAS_PHONE:
+    label: has phone number
+    description: Reachable on this number.
+    source: [Person, LegalEntity]
+    target: [PhoneNumber]
+    temporal: true
+
+  HAS_EMAIL:
+    label: has email address
+    description: Reachable at this address.
+    source: [Person, LegalEntity]
+    target: [EmailAddress]
+    temporal: true
+
+  HAS_WEBSITE:
+    label: has website
+    description: Operates this website.
+    source: [LegalEntity]
+    target: [Website]
+    temporal: true
+
+  HOLDS_ACCOUNT:
+    label: holds account
+    description: Is the account holder.
+    source: [Person, LegalEntity]
+    target: [BankAccount]
+    temporal: true
+
+  # --- Money ---------------------------------------------------------
+
+  SENT:
+    label: sent
+    description: Is the payer of the transaction.
+    source: [Person, LegalEntity, BankAccount]
+    target: [Transaction]
+    temporal: false
+
+  RECEIVED_BY:
+    label: was received by
+    description: Is the payee of the transaction.
+    source: [Transaction]
+    target: [Person, LegalEntity, BankAccount]
+    temporal: false
+
+  # --- Procurement ---------------------------------------------------
+
+  ISSUED_TENDER:
+    label: issued tender
+    description: Published the procurement notice as contracting authority.
+    source: [LegalEntity]
+    target: [PublicTender]
+    temporal: false
+
+  BID_ON:
+    label: bid on
+    description: Submitted a tender in response to the notice.
+    source: [LegalEntity]
+    target: [PublicTender]
+    temporal: false
+
+  AWARDED:
+    label: was awarded
+    description: Won the contract or one of its lots.
+    source: [LegalEntity]
+    target: [PublicTender]
+    temporal: false
+    properties:
+      lot:
+        type: string
+        description: Lot awarded, where the tender was divided.
+      amount:
+        type: number
+        description: Awarded value.
+      currency:
+        type: currency
+        description: Currency of the award.
+
+  # --- Sanctions and legal -------------------------------------------
+
+  SUBJECT_TO:
+    label: is subject to
+    description: Named on the sanctions listing.
+    source: [Person, LegalEntity, Asset]
+    target: [SanctionsListing]
+    temporal: true
+
+  PARTY_TO:
+    label: is party to
+    description: Appears in the proceedings.
+    source: [Person, LegalEntity]
+    target: [LegalCase]
+    temporal: true
+    properties:
+      role:
+        type: enum
+        enum: [claimant, defendant, witness, third_party, prosecutor, unknown]
+        description: Capacity in which they appear.
+
+# ---------------------------------------------------------------------
+# System relationship types
+#
+# Not domain facts. These wire up provenance and identity, and the canvas
+# treats them specially rather than drawing them as ordinary edges.
+# ---------------------------------------------------------------------
+system_relationship_types:
+
+  MENTIONS:
+    label: mentions
+    description: >-
+      The source refers to the entity. This is node-level provenance;
+      claims about relationships are carried by the assertion layer.
+    source: [Source]
+    target: [Thing]
+    temporal: false
+    properties:
+      page:
+        type: integer
+        description: Page or location within the source.
+      quote:
+        type: text
+        description: Supporting excerpt.
+
+  SAME_AS:
+    label: is the same as
+    description: >-
+      Asserts that two nodes denote the same real-world thing. Created as
+      a candidate — never automatically confirmed — and resolved by a
+      human in the review queue.
+    source: [Thing]
+    target: [Thing]
+    directed: false
+    symmetric: true
+    temporal: false
+    properties:
+      status:
+        type: enum
+        enum: [candidate, confirmed, rejected]
+        description: Where the candidate stands.
+        required: true
+      basis:
+        type: string
+        description: Why the match was proposed, e.g. shared LEI.
+      decided_by:
+        type: string
+        description: Who confirmed or rejected it.
+      decided_at:
+        type: datetime
+        description: When the decision was taken.

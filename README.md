@@ -8,7 +8,8 @@ knowledge graph, and explored on a canvas where you can lay out, expand and
 annotate the network. Data arrives from registry APIs, uploaded documents and
 language-model extraction — and nothing enters the database until you accept it.
 
-> **Status: early development.** Milestone M0 (project skeleton) is complete.
+> **Status: early development.** Milestones M0 (skeleton) and M1 (ontology)
+> are complete.
 > See [docs/decisions.md](docs/decisions.md) for the design rationale.
 
 ## Design in one minute
@@ -67,6 +68,50 @@ curl -s localhost:8000/health
 A `status` of `degraded` means the app is running but Neo4j is not reachable;
 the `neo4j.error` field says why.
 
+## Working with the ontology
+
+`ontology/ontology.yaml` is the data model. Edit it, then regenerate:
+
+```bash
+sla-ontology validate       # is it coherent?
+sla-ontology generate       # rewrite the derived artefacts
+sla-ontology check          # fail if anything is out of date (for CI)
+sla-ontology show Company   # describe one type
+```
+
+Generated artefacts are committed, so a fresh clone works without a build step:
+
+| Artefact | Consumer |
+|---|---|
+| `src/sla/ontology/generated/models.py` | Pydantic models for type checking and validation |
+| `ontology/build/ontology.schema.json` | Other tools, and structured output from language models |
+| `ontology/build/constraints.cypher` | Neo4j constraints and indexes |
+
+The canvas reads the ontology from `GET /api/ontology` at runtime rather than
+from a generated file.
+
+### Before you change the ontology
+
+Regenerating updates the code. It does **not** update data already in Neo4j.
+`sla-ontology diff` says which of your changes are safe:
+
+```bash
+sla-ontology diff git:HEAD          # compare against the committed version
+```
+
+```
+Additive (2) — safe to apply to existing data:
+  + Company.employee_count: new optional property
+  + LegalCase.status: enum values added: ['stayed']
+
+Breaking (1) — existing data needs migrating:
+  ! Person.birth_date: property removed
+      migration: Drop 'birth_date' from existing Person nodes. If this is a
+                 rename, copy the value to the new property first.
+```
+
+It exits non-zero when a change is breaking.
+
 ## Development
 
 ```bash
@@ -80,8 +125,8 @@ ruff format .       # format
 | Milestone | Scope | Status |
 |---|---|---|
 | **M0** | Project skeleton, Neo4j via Docker, health check | ✅ Done |
-| **M1** | Ontology file, validation, code generation | Next |
-| **M2** | Graph store, assertion layer, temporal queries, `SAME_AS` detection | |
+| **M1** | Ontology file, validation, code generation | ✅ Done |
+| **M2** | Graph store, assertion layer, temporal queries, `SAME_AS` detection | Next |
 | **M3** | Canvas: icons, drag, multi-select, layouts over selections | |
 | **M4** | Context menu, expand from database, staging and review, first registry connectors | |
 | M5 | Language-model transforms: online search, registry routing | Deferred |

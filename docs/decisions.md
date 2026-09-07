@@ -8,8 +8,14 @@ the code later will otherwise have to guess at the reasoning.
 
 `ontology/ontology.yaml` is the single source of truth for entity types,
 relationship types, their properties and their display. Code generation turns
-it into Pydantic models, JSON Schema, Neo4j constraints and a JavaScript
-styling module — four consumers, one definition.
+it into Pydantic models, JSON Schema and Neo4j constraints; the canvas reads
+the ontology from `GET /api/ontology` at runtime rather than from a generated
+JavaScript file, which is one fewer artefact that can fall behind its source.
+
+Generated artefacts are **committed**, so a fresh clone works without a build
+step, and a change to the ontology shows up as a reviewable diff in the code it
+affects. `sla-ontology check` fails when they have drifted, and a test asserts
+the same thing.
 
 The structure stays compatible with [FollowTheMoney][ftm], the model behind
 OpenSanctions and Aleph, and `ontology/ftm-mapping.yaml` records the
@@ -136,3 +142,24 @@ API response or a document that is stored as a source and can be re-read.
 
 Anthropic's API is the first provider, behind a narrow internal interface so
 others can be added without touching call sites.
+
+
+## 12. Ontology changes are classified, because data does not regenerate
+
+Editing the ontology and running `sla-ontology generate` updates every derived
+artefact. It does **not** update data already in Neo4j — renaming a property
+leaves every stored node using the old key.
+
+So `sla-ontology diff` sorts changes into two kinds:
+
+- **Additive** — new types, new optional properties, added enum values, wider
+  relationship endpoints. Safe to apply to a populated database.
+- **Breaking** — removals, renames, type or cardinality changes, newly required
+  properties, narrowed endpoints. Each carries a note describing the migration
+  it implies, and the command exits non-zero.
+
+A rename necessarily reads as a removal plus an addition, since the file gives
+no way to express intent; the migration note says so explicitly.
+
+Nodes record the ontology version they were written under, so a migration can
+find the ones it still has to convert.

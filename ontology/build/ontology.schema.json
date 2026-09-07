@@ -1,0 +1,3098 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://outerrelay.github.io/simple-link-analysis/ontology/0.1.0",
+  "title": "Simple Link Analysis Ontology",
+  "description": "An ontology for corporate and individual due diligence: who owns what, who controls whom, where they are, and which source told us so.",
+  "x-generated-by": "Generated from ontology/ontology.yaml by `sla-ontology generate`. Do not edit by hand: edit the ontology and regenerate.",
+  "x-ontology-version": "0.1.0",
+  "$defs": {
+    "Address": {
+      "type": "object",
+      "title": "Address",
+      "description": "A postal address.",
+      "properties": {
+        "type": {
+          "const": "Address",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "street": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Street and number.",
+          "x-pii": true
+        },
+        "city": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "City or town."
+        },
+        "postal_code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Postal or ZIP code."
+        },
+        "region": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "State, province or county."
+        },
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Country."
+        },
+        "latitude": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Decimal degrees north."
+        },
+        "longitude": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Decimal degrees east."
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Thing"
+      ],
+      "x-followthemoney": "Address"
+    },
+    "ApiRecord": {
+      "type": "object",
+      "title": "API record",
+      "description": "A response from a registry or data provider, retained so that any claim derived from it can be re-checked against what was returned.",
+      "properties": {
+        "type": {
+          "const": "ApiRecord",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "retrieved_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this source was captured."
+        },
+        "content_hash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "SHA-256 of the stored content, for deduplication."
+        },
+        "provider": {
+          "type": "string",
+          "description": "Data provider, e.g. companies_house, gleif."
+        },
+        "endpoint": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Endpoint or query that produced the record."
+        },
+        "query": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Parameters used."
+        }
+      },
+      "required": [
+        "type",
+        "name",
+        "retrieved_at",
+        "provider"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Source",
+        "Thing"
+      ]
+    },
+    "BankAccount": {
+      "type": "object",
+      "title": "Bank account",
+      "description": "An account held at a financial institution.",
+      "properties": {
+        "type": {
+          "const": "BankAccount",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "value_amount": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Most recent known value."
+        },
+        "value_currency": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Currency of the value."
+        },
+        "valuation_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Date the value was assessed."
+        },
+        "iban": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "International bank account number.",
+          "x-pii": true
+        },
+        "bic": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "SWIFT/BIC code of the institution."
+        },
+        "bank_name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Name of the institution."
+        },
+        "currency": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Denominating currency."
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Asset",
+        "Thing"
+      ],
+      "x-followthemoney": "BankAccount",
+      "x-identifiers": [
+        "iban"
+      ]
+    },
+    "Company": {
+      "type": "object",
+      "title": "Company",
+      "description": "An incorporated commercial entity.",
+      "properties": {
+        "type": {
+          "const": "Company",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "jurisdiction": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Country whose law the entity is constituted under."
+        },
+        "registration_number": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Identifier issued by the registering authority."
+        },
+        "incorporation_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Date the entity came into existence."
+        },
+        "dissolution_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Date the entity ceased to exist, if it has."
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "active",
+            "dissolved",
+            "liquidation",
+            "dormant",
+            "unknown"
+          ],
+          "description": "Lifecycle status as reported by the registry."
+        },
+        "legal_form": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Legal form as stated by the registry, e.g. GmbH, Ltd, AS."
+        },
+        "sector": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Industry classification."
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "LegalEntity",
+        "Thing"
+      ],
+      "x-followthemoney": "Company",
+      "x-identifiers": [
+        "registration_number"
+      ]
+    },
+    "Document": {
+      "type": "object",
+      "title": "Document",
+      "description": "An uploaded file — PDF, Word, spreadsheet or similar.",
+      "properties": {
+        "type": {
+          "const": "Document",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "retrieved_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this source was captured."
+        },
+        "content_hash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "SHA-256 of the stored content, for deduplication."
+        },
+        "filename": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Original filename as uploaded."
+        },
+        "media_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "IANA media type."
+        },
+        "page_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Number of pages, where applicable."
+        },
+        "published_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Date the document itself is dated."
+        },
+        "author": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Stated author."
+        }
+      },
+      "required": [
+        "type",
+        "name",
+        "retrieved_at"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Source",
+        "Thing"
+      ],
+      "x-followthemoney": "Document",
+      "x-identifiers": [
+        "content_hash"
+      ]
+    },
+    "EmailAddress": {
+      "type": "object",
+      "title": "Email address",
+      "description": "An email address.",
+      "properties": {
+        "type": {
+          "const": "EmailAddress",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "domain": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Domain part, indexed so shared domains are findable."
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Thing"
+      ]
+    },
+    "Identifier": {
+      "type": "object",
+      "title": "Identifier",
+      "description": "A strong identifier issued by an authority. Modelled as a node so that two entities bearing the same one can be detected as duplicate candidates by a single query.",
+      "properties": {
+        "type": {
+          "const": "Identifier",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "scheme": {
+          "type": "string",
+          "description": "Issuing scheme, e.g. lei, orgnr, companies_house, passport."
+        },
+        "value": {
+          "type": "string",
+          "description": "The identifier itself, normalised."
+        },
+        "authority": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Body that issued it."
+        }
+      },
+      "required": [
+        "type",
+        "name",
+        "scheme",
+        "value"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Thing"
+      ]
+    },
+    "LegalCase": {
+      "type": "object",
+      "title": "Legal case",
+      "description": "Court or regulatory proceedings.",
+      "properties": {
+        "type": {
+          "const": "LegalCase",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "case_number": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Docket or case reference."
+        },
+        "court": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Court or tribunal."
+        },
+        "jurisdiction": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Jurisdiction hearing the case."
+        },
+        "filed_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Date proceedings began."
+        },
+        "case_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "criminal",
+            "civil",
+            "administrative",
+            "insolvency",
+            "regulatory",
+            "unknown"
+          ],
+          "description": "Nature of the proceedings."
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "open",
+            "closed",
+            "appealed",
+            "settled",
+            "unknown"
+          ],
+          "description": "Current status."
+        },
+        "outcome": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Outcome, where concluded."
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Thing"
+      ],
+      "x-identifiers": [
+        "case_number"
+      ]
+    },
+    "NewsArticle": {
+      "type": "object",
+      "title": "News article",
+      "description": "A journalistic article, typically found by online search.",
+      "properties": {
+        "type": {
+          "const": "NewsArticle",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "retrieved_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this source was captured."
+        },
+        "content_hash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "SHA-256 of the stored content, for deduplication."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Address of the article."
+        },
+        "publication": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Outlet that published it."
+        },
+        "published_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Publication date."
+        },
+        "author": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Byline."
+        },
+        "summary": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Summary of the article's relevance."
+        },
+        "language": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "ISO 639-1 language code."
+        }
+      },
+      "required": [
+        "type",
+        "name",
+        "retrieved_at",
+        "url"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Source",
+        "Thing"
+      ]
+    },
+    "Organisation": {
+      "type": "object",
+      "title": "Organisation",
+      "description": "A body that is not a commercial company: public authority, NGO, political party, association or similar.",
+      "properties": {
+        "type": {
+          "const": "Organisation",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "jurisdiction": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Country whose law the entity is constituted under."
+        },
+        "registration_number": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Identifier issued by the registering authority."
+        },
+        "incorporation_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Date the entity came into existence."
+        },
+        "dissolution_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Date the entity ceased to exist, if it has."
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "active",
+            "dissolved",
+            "liquidation",
+            "dormant",
+            "unknown"
+          ],
+          "description": "Lifecycle status as reported by the registry."
+        },
+        "category": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "public_body",
+            "ngo",
+            "political_party",
+            "association",
+            "religious",
+            "other"
+          ],
+          "description": "Kind of organisation."
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "LegalEntity",
+        "Thing"
+      ],
+      "x-followthemoney": "Organization",
+      "x-identifiers": [
+        "registration_number"
+      ]
+    },
+    "Person": {
+      "type": "object",
+      "title": "Person",
+      "description": "A natural person.",
+      "properties": {
+        "type": {
+          "const": "Person",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "first_name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Given name.",
+          "x-pii": true
+        },
+        "last_name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Family name.",
+          "x-pii": true
+        },
+        "birth_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Date of birth.",
+          "x-pii": true
+        },
+        "death_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Date of death, if known.",
+          "x-pii": true
+        },
+        "nationality": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Citizenships held."
+        },
+        "gender": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "female",
+            "male",
+            "other",
+            "unknown"
+          ],
+          "description": "Gender as recorded by the source.",
+          "x-pii": true
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Honorific or academic title."
+        },
+        "position": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Public role, used chiefly to flag politically exposed persons."
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Thing"
+      ],
+      "x-followthemoney": "Person"
+    },
+    "PhoneNumber": {
+      "type": "object",
+      "title": "Phone number",
+      "description": "A telephone number, stored in E.164 form where possible.",
+      "properties": {
+        "type": {
+          "const": "PhoneNumber",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Country the number is registered in."
+        },
+        "line_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "mobile",
+            "landline",
+            "voip",
+            "fax",
+            "unknown"
+          ],
+          "description": "Kind of line."
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Thing"
+      ]
+    },
+    "PublicTender": {
+      "type": "object",
+      "title": "Public tender",
+      "description": "A public procurement notice or contract award.",
+      "properties": {
+        "type": {
+          "const": "PublicTender",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "reference": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Notice reference issued by the procurement portal."
+        },
+        "published_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Date of publication."
+        },
+        "estimated_amount": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Estimated contract value."
+        },
+        "currency": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Currency of the estimate."
+        },
+        "cpv_codes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Common Procurement Vocabulary codes."
+        },
+        "procedure_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Procurement procedure used."
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Thing"
+      ],
+      "x-identifiers": [
+        "reference"
+      ]
+    },
+    "RealEstate": {
+      "type": "object",
+      "title": "Real estate",
+      "description": "Land or buildings.",
+      "properties": {
+        "type": {
+          "const": "RealEstate",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "value_amount": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Most recent known value."
+        },
+        "value_currency": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Currency of the value."
+        },
+        "valuation_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Date the value was assessed."
+        },
+        "cadastral_reference": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Land registry reference."
+        },
+        "area_sqm": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Area in square metres."
+        },
+        "property_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Residential, commercial, agricultural and so on."
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Asset",
+        "Thing"
+      ],
+      "x-followthemoney": "RealEstate",
+      "x-identifiers": [
+        "cadastral_reference"
+      ]
+    },
+    "SanctionsListing": {
+      "type": "object",
+      "title": "Sanctions listing",
+      "description": "An entry on a sanctions or watch list.",
+      "properties": {
+        "type": {
+          "const": "SanctionsListing",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "authority": {
+          "type": "string",
+          "description": "Issuing authority, e.g. OFAC, EU, UK OFSI."
+        },
+        "programme": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Sanctions programme."
+        },
+        "listed_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Date the listing took effect."
+        },
+        "delisted_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Date the listing was lifted, if it has been."
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Stated grounds for listing."
+        }
+      },
+      "required": [
+        "type",
+        "name",
+        "authority"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Thing"
+      ],
+      "x-followthemoney": "Sanction"
+    },
+    "Transaction": {
+      "type": "object",
+      "title": "Transaction",
+      "description": "A transfer of value. Modelled as a node rather than an edge so that payer, payee and supporting documents can all attach to it.",
+      "properties": {
+        "type": {
+          "const": "Transaction",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount transferred."
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency of the amount."
+        },
+        "transaction_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Date of the transfer."
+        },
+        "purpose": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Stated purpose or reference."
+        }
+      },
+      "required": [
+        "type",
+        "name",
+        "amount",
+        "currency"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Thing"
+      ],
+      "x-followthemoney": "Payment"
+    },
+    "Vessel": {
+      "type": "object",
+      "title": "Vessel",
+      "description": "A ship. Relevant to sanctions and trade investigations.",
+      "properties": {
+        "type": {
+          "const": "Vessel",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "value_amount": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Most recent known value."
+        },
+        "value_currency": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Currency of the value."
+        },
+        "valuation_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "Date the value was assessed."
+        },
+        "imo_number": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "IMO ship identification number."
+        },
+        "flag": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Country of registration."
+        },
+        "tonnage": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Gross tonnage."
+        },
+        "call_sign": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Radio call sign."
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Asset",
+        "Thing"
+      ],
+      "x-followthemoney": "Vessel",
+      "x-identifiers": [
+        "imo_number"
+      ]
+    },
+    "WebPage": {
+      "type": "object",
+      "title": "Web page",
+      "description": "A page captured from the web.",
+      "properties": {
+        "type": {
+          "const": "WebPage",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "retrieved_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this source was captured."
+        },
+        "content_hash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "SHA-256 of the stored content, for deduplication."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Address the page was retrieved from."
+        }
+      },
+      "required": [
+        "type",
+        "name",
+        "retrieved_at",
+        "url"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Source",
+        "Thing"
+      ]
+    },
+    "Website": {
+      "type": "object",
+      "title": "Website",
+      "description": "A website or web domain.",
+      "properties": {
+        "type": {
+          "const": "Website",
+          "description": "Entity type discriminator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Primary display name for the entity."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alternative names, transliterations and former names."
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Free-text analyst notes."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Canonical URL."
+        },
+        "domain": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Registered domain."
+        }
+      },
+      "required": [
+        "type",
+        "name",
+        "url"
+      ],
+      "additionalProperties": false,
+      "x-extends": [
+        "Thing"
+      ]
+    },
+    "ASSOCIATE_OF": {
+      "type": "object",
+      "title": "is associate of",
+      "description": "Known connection that is not familial, employment or ownership. Deliberately loose; use a more specific type where one fits.",
+      "properties": {
+        "type": {
+          "const": "ASSOCIATE_OF",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        },
+        "basis": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "What the association rests on."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": false,
+      "x-source-types": [
+        "Company",
+        "Organisation",
+        "Person"
+      ],
+      "x-target-types": [
+        "Company",
+        "Organisation",
+        "Person"
+      ],
+      "x-followthemoney": "Associate"
+    },
+    "AWARDED": {
+      "type": "object",
+      "title": "was awarded",
+      "description": "Won the contract or one of its lots.",
+      "properties": {
+        "type": {
+          "const": "AWARDED",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "lot": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Lot awarded, where the tender was divided."
+        },
+        "amount": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Awarded value."
+        },
+        "currency": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Currency of the award."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Company",
+        "Organisation"
+      ],
+      "x-target-types": [
+        "PublicTender"
+      ]
+    },
+    "BENEFICIAL_OWNER_OF": {
+      "type": "object",
+      "title": "is beneficial owner of",
+      "description": "Ultimately benefits from or controls the entity, whether or not the holding is direct.",
+      "properties": {
+        "type": {
+          "const": "BENEFICIAL_OWNER_OF",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        },
+        "percentage": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Percentage beneficially held."
+        },
+        "nature_of_control": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "How control is exercised, as reported by the registry."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Person"
+      ],
+      "x-target-types": [
+        "Company",
+        "Organisation"
+      ]
+    },
+    "BID_ON": {
+      "type": "object",
+      "title": "bid on",
+      "description": "Submitted a tender in response to the notice.",
+      "properties": {
+        "type": {
+          "const": "BID_ON",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Company",
+        "Organisation"
+      ],
+      "x-target-types": [
+        "PublicTender"
+      ]
+    },
+    "CONTROLS": {
+      "type": "object",
+      "title": "controls",
+      "description": "Exercises control by means other than shareholding.",
+      "properties": {
+        "type": {
+          "const": "CONTROLS",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        },
+        "basis": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Basis of control, e.g. voting agreement, golden share."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Company",
+        "Organisation",
+        "Person"
+      ],
+      "x-target-types": [
+        "BankAccount",
+        "Company",
+        "Organisation",
+        "RealEstate",
+        "Vessel"
+      ]
+    },
+    "DIRECTOR_OF": {
+      "type": "object",
+      "title": "is director of",
+      "description": "Serves on the board or as a statutory officer.",
+      "properties": {
+        "type": {
+          "const": "DIRECTOR_OF",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        },
+        "role": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Role as stated by the registry, e.g. geschäftsführer."
+        },
+        "appointed_by": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Body that made the appointment."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Company",
+        "Organisation",
+        "Person"
+      ],
+      "x-target-types": [
+        "Company",
+        "Organisation"
+      ],
+      "x-followthemoney": "Directorship"
+    },
+    "EMPLOYED_BY": {
+      "type": "object",
+      "title": "is employed by",
+      "description": "Works for the entity.",
+      "properties": {
+        "type": {
+          "const": "EMPLOYED_BY",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        },
+        "job_title": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Job title."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Person"
+      ],
+      "x-target-types": [
+        "Company",
+        "Organisation"
+      ],
+      "x-followthemoney": "Employment"
+    },
+    "FAMILY_OF": {
+      "type": "object",
+      "title": "is family of",
+      "description": "Related by blood, marriage or partnership.",
+      "properties": {
+        "type": {
+          "const": "FAMILY_OF",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        },
+        "relationship": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Nature of the tie, e.g. spouse, sibling, parent."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": false,
+      "x-source-types": [
+        "Person"
+      ],
+      "x-target-types": [
+        "Person"
+      ],
+      "x-followthemoney": "Family"
+    },
+    "HAS_EMAIL": {
+      "type": "object",
+      "title": "has email address",
+      "description": "Reachable at this address.",
+      "properties": {
+        "type": {
+          "const": "HAS_EMAIL",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Company",
+        "Organisation",
+        "Person"
+      ],
+      "x-target-types": [
+        "EmailAddress"
+      ]
+    },
+    "HAS_IDENTIFIER": {
+      "type": "object",
+      "title": "has identifier",
+      "description": "Bears an identifier issued by an authority. Two entities sharing an identifier are proposed as duplicate candidates.",
+      "properties": {
+        "type": {
+          "const": "HAS_IDENTIFIER",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "BankAccount",
+        "Company",
+        "Organisation",
+        "Person",
+        "RealEstate",
+        "Vessel"
+      ],
+      "x-target-types": [
+        "Identifier"
+      ]
+    },
+    "HAS_PHONE": {
+      "type": "object",
+      "title": "has phone number",
+      "description": "Reachable on this number.",
+      "properties": {
+        "type": {
+          "const": "HAS_PHONE",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Company",
+        "Organisation",
+        "Person"
+      ],
+      "x-target-types": [
+        "PhoneNumber"
+      ]
+    },
+    "HAS_WEBSITE": {
+      "type": "object",
+      "title": "has website",
+      "description": "Operates this website.",
+      "properties": {
+        "type": {
+          "const": "HAS_WEBSITE",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Company",
+        "Organisation"
+      ],
+      "x-target-types": [
+        "Website"
+      ]
+    },
+    "HOLDS_ACCOUNT": {
+      "type": "object",
+      "title": "holds account",
+      "description": "Is the account holder.",
+      "properties": {
+        "type": {
+          "const": "HOLDS_ACCOUNT",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Company",
+        "Organisation",
+        "Person"
+      ],
+      "x-target-types": [
+        "BankAccount"
+      ]
+    },
+    "ISSUED_TENDER": {
+      "type": "object",
+      "title": "issued tender",
+      "description": "Published the procurement notice as contracting authority.",
+      "properties": {
+        "type": {
+          "const": "ISSUED_TENDER",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Company",
+        "Organisation"
+      ],
+      "x-target-types": [
+        "PublicTender"
+      ]
+    },
+    "LOCATED_AT": {
+      "type": "object",
+      "title": "is located at",
+      "description": "Physically situated at the address.",
+      "properties": {
+        "type": {
+          "const": "LOCATED_AT",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "BankAccount",
+        "RealEstate",
+        "Vessel"
+      ],
+      "x-target-types": [
+        "Address"
+      ]
+    },
+    "MEMBER_OF": {
+      "type": "object",
+      "title": "is member of",
+      "description": "Belongs to an organisation.",
+      "properties": {
+        "type": {
+          "const": "MEMBER_OF",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        },
+        "role": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Role within the organisation."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Company",
+        "Organisation",
+        "Person"
+      ],
+      "x-target-types": [
+        "Organisation"
+      ],
+      "x-followthemoney": "Membership"
+    },
+    "MENTIONS": {
+      "type": "object",
+      "title": "mentions",
+      "description": "The source refers to the entity. This is node-level provenance; claims about relationships are carried by the assertion layer.",
+      "properties": {
+        "type": {
+          "const": "MENTIONS",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "page": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Page or location within the source."
+        },
+        "quote": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Supporting excerpt."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "ApiRecord",
+        "Document",
+        "NewsArticle",
+        "WebPage"
+      ],
+      "x-target-types": [
+        "Address",
+        "ApiRecord",
+        "BankAccount",
+        "Company",
+        "Document",
+        "EmailAddress",
+        "Identifier",
+        "LegalCase",
+        "NewsArticle",
+        "Organisation",
+        "Person",
+        "PhoneNumber",
+        "PublicTender",
+        "RealEstate",
+        "SanctionsListing",
+        "Transaction",
+        "Vessel",
+        "WebPage",
+        "Website"
+      ]
+    },
+    "OWNS": {
+      "type": "object",
+      "title": "owns",
+      "description": "Holds an ownership interest in an asset or entity.",
+      "properties": {
+        "type": {
+          "const": "OWNS",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        },
+        "percentage": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Percentage of the holding, where known."
+        },
+        "share_class": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Class of shares held."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Company",
+        "Organisation",
+        "Person"
+      ],
+      "x-target-types": [
+        "BankAccount",
+        "Company",
+        "Organisation",
+        "RealEstate",
+        "Vessel"
+      ],
+      "x-followthemoney": "Ownership"
+    },
+    "PARENT_OF": {
+      "type": "object",
+      "title": "is parent of",
+      "description": "Sits directly above another entity in a corporate group.",
+      "properties": {
+        "type": {
+          "const": "PARENT_OF",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Company",
+        "Organisation"
+      ],
+      "x-target-types": [
+        "Company",
+        "Organisation"
+      ]
+    },
+    "PARTY_TO": {
+      "type": "object",
+      "title": "is party to",
+      "description": "Appears in the proceedings.",
+      "properties": {
+        "type": {
+          "const": "PARTY_TO",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        },
+        "role": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "claimant",
+            "defendant",
+            "witness",
+            "third_party",
+            "prosecutor",
+            "unknown"
+          ],
+          "description": "Capacity in which they appear."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Company",
+        "Organisation",
+        "Person"
+      ],
+      "x-target-types": [
+        "LegalCase"
+      ]
+    },
+    "RECEIVED_BY": {
+      "type": "object",
+      "title": "was received by",
+      "description": "Is the payee of the transaction.",
+      "properties": {
+        "type": {
+          "const": "RECEIVED_BY",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Transaction"
+      ],
+      "x-target-types": [
+        "BankAccount",
+        "Company",
+        "Organisation",
+        "Person"
+      ]
+    },
+    "REGISTERED_AT": {
+      "type": "object",
+      "title": "is registered at",
+      "description": "Has its registered or business address here.",
+      "properties": {
+        "type": {
+          "const": "REGISTERED_AT",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        },
+        "address_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "registered",
+            "trading",
+            "correspondence",
+            "branch"
+          ],
+          "description": "Which kind of address this is."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Company",
+        "Organisation"
+      ],
+      "x-target-types": [
+        "Address"
+      ]
+    },
+    "RESIDES_AT": {
+      "type": "object",
+      "title": "resides at",
+      "description": "Lives at the address.",
+      "properties": {
+        "type": {
+          "const": "RESIDES_AT",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Person"
+      ],
+      "x-target-types": [
+        "Address"
+      ]
+    },
+    "SAME_AS": {
+      "type": "object",
+      "title": "is the same as",
+      "description": "Asserts that two nodes denote the same real-world thing. Created as a candidate — never automatically confirmed — and resolved by a human in the review queue.",
+      "properties": {
+        "type": {
+          "const": "SAME_AS",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "candidate",
+            "confirmed",
+            "rejected"
+          ],
+          "description": "Where the candidate stands."
+        },
+        "basis": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Why the match was proposed, e.g. shared LEI."
+        },
+        "decided_by": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Who confirmed or rejected it."
+        },
+        "decided_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time",
+          "description": "When the decision was taken."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id",
+        "status"
+      ],
+      "additionalProperties": false,
+      "x-directed": false,
+      "x-source-types": [
+        "Address",
+        "ApiRecord",
+        "BankAccount",
+        "Company",
+        "Document",
+        "EmailAddress",
+        "Identifier",
+        "LegalCase",
+        "NewsArticle",
+        "Organisation",
+        "Person",
+        "PhoneNumber",
+        "PublicTender",
+        "RealEstate",
+        "SanctionsListing",
+        "Transaction",
+        "Vessel",
+        "WebPage",
+        "Website"
+      ],
+      "x-target-types": [
+        "Address",
+        "ApiRecord",
+        "BankAccount",
+        "Company",
+        "Document",
+        "EmailAddress",
+        "Identifier",
+        "LegalCase",
+        "NewsArticle",
+        "Organisation",
+        "Person",
+        "PhoneNumber",
+        "PublicTender",
+        "RealEstate",
+        "SanctionsListing",
+        "Transaction",
+        "Vessel",
+        "WebPage",
+        "Website"
+      ]
+    },
+    "SENT": {
+      "type": "object",
+      "title": "sent",
+      "description": "Is the payer of the transaction.",
+      "properties": {
+        "type": {
+          "const": "SENT",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "BankAccount",
+        "Company",
+        "Organisation",
+        "Person"
+      ],
+      "x-target-types": [
+        "Transaction"
+      ]
+    },
+    "SUBJECT_TO": {
+      "type": "object",
+      "title": "is subject to",
+      "description": "Named on the sanctions listing.",
+      "properties": {
+        "type": {
+          "const": "SUBJECT_TO",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "BankAccount",
+        "Company",
+        "Organisation",
+        "Person",
+        "RealEstate",
+        "Vessel"
+      ],
+      "x-target-types": [
+        "SanctionsListing"
+      ]
+    }
+  },
+  "properties": {
+    "entities": {
+      "type": "array",
+      "description": "Entities conforming to the ontology.",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/Address"
+          },
+          {
+            "$ref": "#/$defs/ApiRecord"
+          },
+          {
+            "$ref": "#/$defs/BankAccount"
+          },
+          {
+            "$ref": "#/$defs/Company"
+          },
+          {
+            "$ref": "#/$defs/Document"
+          },
+          {
+            "$ref": "#/$defs/EmailAddress"
+          },
+          {
+            "$ref": "#/$defs/Identifier"
+          },
+          {
+            "$ref": "#/$defs/LegalCase"
+          },
+          {
+            "$ref": "#/$defs/NewsArticle"
+          },
+          {
+            "$ref": "#/$defs/Organisation"
+          },
+          {
+            "$ref": "#/$defs/Person"
+          },
+          {
+            "$ref": "#/$defs/PhoneNumber"
+          },
+          {
+            "$ref": "#/$defs/PublicTender"
+          },
+          {
+            "$ref": "#/$defs/RealEstate"
+          },
+          {
+            "$ref": "#/$defs/SanctionsListing"
+          },
+          {
+            "$ref": "#/$defs/Transaction"
+          },
+          {
+            "$ref": "#/$defs/Vessel"
+          },
+          {
+            "$ref": "#/$defs/WebPage"
+          },
+          {
+            "$ref": "#/$defs/Website"
+          }
+        ]
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "description": "Relationships between the entities above.",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/ASSOCIATE_OF"
+          },
+          {
+            "$ref": "#/$defs/AWARDED"
+          },
+          {
+            "$ref": "#/$defs/BENEFICIAL_OWNER_OF"
+          },
+          {
+            "$ref": "#/$defs/BID_ON"
+          },
+          {
+            "$ref": "#/$defs/CONTROLS"
+          },
+          {
+            "$ref": "#/$defs/DIRECTOR_OF"
+          },
+          {
+            "$ref": "#/$defs/EMPLOYED_BY"
+          },
+          {
+            "$ref": "#/$defs/FAMILY_OF"
+          },
+          {
+            "$ref": "#/$defs/HAS_EMAIL"
+          },
+          {
+            "$ref": "#/$defs/HAS_IDENTIFIER"
+          },
+          {
+            "$ref": "#/$defs/HAS_PHONE"
+          },
+          {
+            "$ref": "#/$defs/HAS_WEBSITE"
+          },
+          {
+            "$ref": "#/$defs/HOLDS_ACCOUNT"
+          },
+          {
+            "$ref": "#/$defs/ISSUED_TENDER"
+          },
+          {
+            "$ref": "#/$defs/LOCATED_AT"
+          },
+          {
+            "$ref": "#/$defs/MEMBER_OF"
+          },
+          {
+            "$ref": "#/$defs/MENTIONS"
+          },
+          {
+            "$ref": "#/$defs/OWNS"
+          },
+          {
+            "$ref": "#/$defs/PARENT_OF"
+          },
+          {
+            "$ref": "#/$defs/PARTY_TO"
+          },
+          {
+            "$ref": "#/$defs/RECEIVED_BY"
+          },
+          {
+            "$ref": "#/$defs/REGISTERED_AT"
+          },
+          {
+            "$ref": "#/$defs/RESIDES_AT"
+          },
+          {
+            "$ref": "#/$defs/SAME_AS"
+          },
+          {
+            "$ref": "#/$defs/SENT"
+          },
+          {
+            "$ref": "#/$defs/SUBJECT_TO"
+          }
+        ]
+      }
+    }
+  },
+  "type": "object"
+}

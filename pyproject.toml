@@ -9,6 +9,9 @@ description = "Browser-based network analysis over an ontology-defined knowledge
 requires-python = ">=3.11"
 dynamic = ["dependencies"]
 
+[project.scripts]
+sla-ontology = "sla.ontology.cli:main"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
@@ -26,6 +29,10 @@ asyncio_default_fixture_loop_scope = "function"
 [tool.ruff]
 line-length = 100
 src = ["src", "tests"]
+# Generated files are formatted by their generator; letting ruff reformat them
+# makes them differ from what `sla-ontology generate` produces, which the
+# staleness check then reports.
+extend-exclude = ["src/sla/ontology/generated"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

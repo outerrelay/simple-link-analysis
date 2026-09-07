@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from sla import __version__
-from sla.api import health
+from sla.api import health, ontology
 from sla.config import get_settings
 from sla.graph import driver as graph_driver
 
@@ -39,3 +39,4 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.include_router(health.router)
+app.include_router(ontology.router)
