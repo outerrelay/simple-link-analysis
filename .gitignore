@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Environment / secrets
+.env
+
+# Application state
+*.sqlite
+*.sqlite3
+data/
+
+# Generated ontology artefacts (rebuilt by `sla-codegen`)
+src/sla/ontology/generated/
+web/js/ontology.generated.js
+
+# Tooling
+.pytest_cache/
+.ruff_cache/

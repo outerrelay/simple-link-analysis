@@ -1,0 +1,27 @@
+# Neo4j holds the knowledge graph. Application state (charts, node positions,
+# jobs, staged proposals, review queue) lives in SQLite alongside the app, so
+# this is the only service needed for local development.
+services:
+  neo4j:
+    image: neo4j:5.26-community
+    container_name: sla-neo4j
+    ports:
+      - "7474:7474"   # HTTP browser
+      - "7687:7687"   # Bolt
+    environment:
+      # Must match NEO4J_USER / NEO4J_PASSWORD in your .env
+      NEO4J_AUTH: neo4j/please-change-me
+      NEO4J_server_memory_heap_max__size: 1G
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+volumes:
+  neo4j-data:
+  neo4j-logs:
