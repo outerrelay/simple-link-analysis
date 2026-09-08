@@ -189,3 +189,50 @@ A registered-agent address can have thousands of companies attached. Returning
 them all would stall the browser and tell the analyst nothing, so `expand()`
 takes a limit, defaulting to 500 edges, and sets `truncated` when it stops
 short. `degree()` lets the interface warn before running the expansion at all.
+
+
+## 15. Canvas libraries are vendored, not loaded from a CDN
+
+Cytoscape.js, dagre and cytoscape-dagre (all MIT) live in `web/vendor/` with
+their licences. Two reasons: the tool should work with no internet access, and
+a CDN request tells a third party which investigation tool is open and when.
+For software that handles due-diligence material that is a needless disclosure.
+
+The cost is about 660 KB in the repository and manual updates. Both are
+acceptable for a dependency set this small and this stable.
+
+## 16. The canvas reads the ontology, and hard-codes no entity type
+
+`web/js/style.js` builds the Cytoscape stylesheet from `GET /api/ontology`.
+Adding an entity type to the YAML gives it a styled node, a legend entry and
+context-menu actions on the next reload, with no change to any JavaScript.
+
+The right-click menu offers a node only the relationships its own type can be
+the source of, so a Person is never asked to "expand by issued tender". That
+list comes from the ontology's inheritance resolution, not from a hand-written
+mapping.
+
+Sources are drawn as squares rather than circles, and system relationships
+(`MENTIONS`, `SAME_AS`) as dotted or dashed lines, because neither is an
+ordinary claim about the network: one is evidence, the other a proposal
+awaiting review.
+
+## 17. Layouts run over a selection within its own bounding box
+
+Running a layout over selected nodes only is a stated requirement, and the
+naive implementation gets it wrong: Cytoscape lays a collection out in the
+viewport, which flings the selection across the canvas and abandons everything
+else. So a selection layout computes the box the selected nodes already
+occupy and confines the result to it. Tidying five nodes leaves them where
+they were, tidier.
+
+## 18. The test suite refuses to wipe a populated database
+
+The graph tests clear the database between cases. Pointed at a working graph
+that would destroy an investigation, so the fixture counts the nodes first and
+skips with an explanation rather than deleting anything. `SLA_TEST_NEO4J_URI`
+points the tests at a scratch instance; `SLA_ALLOW_DESTRUCTIVE_TESTS=1` says
+the configured database is disposable.
+
+This was found the hard way: a test run silently deleted the development seed
+data during M3.

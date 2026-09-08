@@ -10,11 +10,14 @@ from __future__ import annotations
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from sla import __version__
-from sla.api import health, ontology
+from sla.api import charts, graph, health, ontology
+from sla.app import database as app_database
 from sla.config import get_settings
 from sla.graph import driver as graph_driver
 from sla.graph import schema
@@ -36,6 +39,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     A breaking change still needs the migration ``sla-ontology diff`` describes.
     """
     settings = get_settings()
+    app_database.init(settings)
     driver = await graph_driver.connect(settings)
     try:
         await schema.apply(driver, settings.neo4j_database)
@@ -45,6 +49,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         await graph_driver.close()
+        app_database.dispose()
 
 
 app = FastAPI(
@@ -54,3 +59,13 @@ app = FastAPI(
 )
 app.include_router(health.router)
 app.include_router(ontology.router)
+app.include_router(graph.router)
+app.include_router(charts.router)
+
+# The canvas is plain ES modules with no build step, so the files are served
+# as they are. Icons come straight from the ontology directory, which keeps
+# them beside the declarations that reference them.
+WEB_ROOT = Path(__file__).resolve().parents[2] / "web"
+ICON_ROOT = Path(__file__).resolve().parents[2] / "ontology" / "icons"
+app.mount("/icons", StaticFiles(directory=ICON_ROOT), name="icons")
+app.mount("/", StaticFiles(directory=WEB_ROOT, html=True), name="web")

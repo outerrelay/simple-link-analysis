@@ -8,8 +8,8 @@ knowledge graph, and explored on a canvas where you can lay out, expand and
 annotate the network. Data arrives from registry APIs, uploaded documents and
 language-model extraction — and nothing enters the database until you accept it.
 
-> **Status: early development.** Milestones M0 (skeleton), M1 (ontology) and
-> M2 (graph store) are complete.
+> **Status: early development.** Milestones M0–M3 are complete: the ontology,
+> the graph store and a working canvas.
 > See [docs/decisions.md](docs/decisions.md) for the design rationale.
 
 ## Design in one minute
@@ -159,6 +159,31 @@ identifier — get a `SAME_AS` relationship with status `candidate`. A human
 confirms or rejects; a decision already recorded is never overwritten by
 re-running detection, and confirming still does not merge the nodes.
 
+## The canvas
+
+```bash
+python -m sla.seed --reset   # a small worked example to look at
+uvicorn sla.main:app --reload
+```
+
+Then open <http://localhost:8000>. Search for an entity to put it on the
+canvas, and right-click it to expand.
+
+- **Layouts** — organic, hierarchy, tree, circle, concentric and grid, each
+  runnable over the whole chart or **only the current selection**. A selection
+  layout tidies the selected nodes within the space they already occupy rather
+  than rearranging the chart around them.
+- **Selection** — click, shift-click, or drag a box.
+- **Right-click** — expand one or two hops, expand by a specific relationship
+  type, reveal sources, or remove from the chart. The relationship types
+  offered come from the ontology, so a Person is never offered "issued tender".
+- **Remove from chart** takes a node off the canvas and leaves it in the
+  database. Deleting from the database is a separate, deliberate action.
+
+Nothing in the canvas hard-codes an entity type. Add one to `ontology.yaml`,
+drop an SVG in `ontology/icons/`, and it appears with its icon, colour, legend
+entry and menu actions on the next reload.
+
 ## Development
 
 ```bash
@@ -171,6 +196,14 @@ Tests that need a database use the `repository` fixture, which skips when none
 is reachable, so a fresh clone runs green without Docker. Start Neo4j with
 `docker compose up -d` to exercise them.
 
+**The graph tests clear the database between cases.** If the configured
+database already holds data they skip rather than wipe it. To run them:
+
+```bash
+SLA_TEST_NEO4J_URI=bolt://localhost:7688 pytest   # a scratch instance
+SLA_ALLOW_DESTRUCTIVE_TESTS=1 pytest              # this database is disposable
+```
+
 ## Roadmap
 
 | Milestone | Scope | Status |
@@ -178,8 +211,8 @@ is reachable, so a fresh clone runs green without Docker. Start Neo4j with
 | **M0** | Project skeleton, Neo4j via Docker, health check | ✅ Done |
 | **M1** | Ontology file, validation, code generation | ✅ Done |
 | **M2** | Graph store, assertion layer, temporal queries, `SAME_AS` detection | ✅ Done |
-| **M3** | Canvas: icons, drag, multi-select, layouts over selections | Next |
-| **M4** | Context menu, expand from database, staging and review, first registry connectors | |
+| **M3** | Canvas: icons, drag, multi-select, layouts over selections | ✅ Done |
+| **M4** | Staging and review, expand transforms, first registry connectors | Next |
 | M5 | Language-model transforms: online search, registry routing | Deferred |
 | M6 | Document and spreadsheet ingestion with ontology mapping | Deferred |
 

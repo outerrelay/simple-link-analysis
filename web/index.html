@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simple Link Analysis</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">Simple Link Analysis</span>
+      </div>
+
+      <div class="chart-picker">
+        <select id="chart-select" aria-label="Chart"></select>
+        <button id="new-chart" class="ghost" title="New chart">New</button>
+      </div>
+
+      <div class="search">
+        <input id="search-input" type="search" placeholder="Search entities…"
+               autocomplete="off" aria-label="Search entities">
+        <div id="search-results" class="search-results" hidden></div>
+      </div>
+
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+    </header>
+
+    <div class="body">
+      <aside class="sidebar" id="sidebar">
+        <section class="panel">
+          <h2>Layout</h2>
+          <div class="layout-scope">
+            <label>
+              <input type="radio" name="scope" value="all" checked>
+              Whole chart
+            </label>
+            <label>
+              <input type="radio" name="scope" value="selection">
+              Selection only <span class="count" id="selection-count">(0)</span>
+            </label>
+          </div>
+          <div class="layout-buttons" id="layout-buttons"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Legend</h2>
+          <div id="legend" class="legend"></div>
+        </section>
+      </aside>
+
+      <main class="canvas-wrap">
+        <div id="cy" class="canvas"></div>
+        <div class="canvas-hint" id="canvas-hint">
+          Search for an entity above to put it on the canvas.
+        </div>
+        <div class="canvas-tools">
+          <button id="fit" class="ghost" title="Fit to view">Fit</button>
+          <button id="remove-selected" class="ghost danger"
+                  title="Take the selected nodes off this chart. They stay in the database.">
+            Remove from chart
+          </button>
+        </div>
+      </main>
+
+      <aside class="inspector" id="inspector" hidden>
+        <button class="close" id="inspector-close" aria-label="Close">×</button>
+        <div id="inspector-body"></div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Vendored rather than loaded from a CDN: this tool should work offline,
+       and an investigation should not announce itself to a third party. -->
+  <script src="/vendor/cytoscape.min.js"></script>
+  <script src="/vendor/dagre.min.js"></script>
+  <script src="/vendor/cytoscape-dagre.js"></script>
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
