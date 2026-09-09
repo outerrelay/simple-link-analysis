@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class WritePolicy(str, Enum):
-    """What a transform does with the nodes and edges it produces.
+    """What an action does with the nodes and edges it produces.
 
     ``REVIEW`` stages the result as a proposal set; nothing reaches Neo4j until
     the user accepts it. ``AUTO_COMMIT`` stages and immediately accepts, so the
@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     # Application state: charts, jobs, proposals, review queue.
     app_database_url: str = "sqlite:///./data/app.sqlite"
 
-    # Default for transforms that do not declare their own policy.
+    # Default for actions that do not declare their own policy.
     default_write_policy: WritePolicy = WritePolicy.REVIEW
 
     # Credentials for later milestones; absent is fine until then.

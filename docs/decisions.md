@@ -105,23 +105,28 @@ Neo4j in one transaction; rejecting discards it, leaving no trace in the graph.
 *propose and immediately accept*. The flag resolves most-specific-first:
 
 1. per invocation (the context menu offers preview or keep),
-2. per transform (declared in its manifest, overridable in config),
+2. per action (declared in its manifest, overridable in config),
 3. global default (`DEFAULT_WRITE_POLICY`, defaults to `review`).
 
-Rejecting writes a tombstone so that re-running a transform does not re-propose
+Rejecting writes a tombstone so that re-running an action does not re-propose
 what was already turned down.
 
 *Superseded:* an earlier decision let deterministic API connectors commit
 directly while only LLM output was reviewed. Making staging universal is both
 safer and simpler — one write path instead of two.
 
-## 8. Transforms are a plugin registry
+## 8. Actions are a plugin registry
 
-Every right-click action — expand from the database, look up a company
+Every right-click **action** — expand from the database, look up a company
 registry, later the LLM-driven searches — implements one interface: declared
 input entity type, declared output types, runs as an async job, returns
 ontology-conformant nodes and edges plus provenance. New capabilities are new
 files, not UI changes.
+
+Maltego calls these "transforms", from the idea of transforming one entity
+into the entities related to it. The word explains itself only once you
+already know what it means, so this project calls them actions: an action is
+something you invoke on a selection, which is exactly what the menu offers.
 
 ## 9. The canvas is Cytoscape.js and plain ES modules
 
@@ -130,7 +135,7 @@ and — importantly — running a layout over a *subset* of elements, which is a
 core requirement. No build step, no framework, no npm: the browser loads ES
 modules directly, and the styling comes from the generated ontology module.
 
-Everything else — ontology, graph access, transforms, ingestion, LLM calls — is
+Everything else — ontology, graph access, actions, ingestion, LLM calls — is
 Python.
 
 ## 10. Single-user locally, designed for multi-user

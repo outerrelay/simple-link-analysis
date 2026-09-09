@@ -4,7 +4,7 @@
  * types its own entity type can actually be the source of, so a Person is
  * never asked to "expand by issued tender".
  *
- * M3 wires up the actions that read from the database. The transforms that
+ * M3 wires up the actions that read from the database. The actions that
  * reach outside it — registry lookups, online search — arrive in M4 and M5 as
  * additional items in this same menu.
  */

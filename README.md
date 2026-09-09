@@ -212,8 +212,8 @@ SLA_ALLOW_DESTRUCTIVE_TESTS=1 pytest              # this database is disposable
 | **M1** | Ontology file, validation, code generation | ✅ Done |
 | **M2** | Graph store, assertion layer, temporal queries, `SAME_AS` detection | ✅ Done |
 | **M3** | Canvas: icons, drag, multi-select, layouts over selections | ✅ Done |
-| **M4** | Staging and review, expand transforms, first registry connectors | Next |
-| M5 | Language-model transforms: online search, registry routing | Deferred |
+| **M4** | Staging and review, expand actions, first registry connectors | Next |
+| M5 | Language-model actions: online search, registry routing | Deferred |
 | M6 | Document and spreadsheet ingestion with ontology mapping | Deferred |
 
 M0–M4 form the first usable tool; we reassess before M5.
@@ -227,6 +227,6 @@ All settings are read from the environment or a local `.env` file — see
 |---|---|
 | `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` | Knowledge graph connection |
 | `APP_DATABASE_URL` | Application state; SQLite locally, PostgreSQL for multi-user |
-| `DEFAULT_WRITE_POLICY` | `review` (default) stages transform output; `auto_commit` accepts it immediately |
+| `DEFAULT_WRITE_POLICY` | `review` (default) stages action output; `auto_commit` accepts it immediately |
 | `ANTHROPIC_API_KEY` | Language-model features (M5) |
 | `COMPANIES_HOUSE_API_KEY` | UK registry connector (M4) |
