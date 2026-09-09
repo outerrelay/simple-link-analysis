@@ -281,3 +281,72 @@ button.primary {
 button.primary:hover:not(:disabled) { background: #355875; }
 
 .review .empty { color: var(--text-faint); font-size: 12px; }
+
+
+/* --- modal (merge) ------------------------------------------------------ */
+
+.modal {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(6, 8, 11, .68);
+  display: grid; place-items: center;
+  padding: 24px;
+}
+.modal[hidden] { display: none; }
+
+.modal-panel {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: 86vh; overflow-y: auto;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 18px 20px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.6);
+}
+.modal-panel .close {
+  position: absolute; top: 10px; right: 10px;
+  border: 0; background: transparent; color: var(--text-faint);
+  font-size: 20px; line-height: 1; padding: 2px 6px;
+}
+.modal-panel h2 { margin: 0 0 3px; font-size: 16px; padding-right: 26px; }
+.modal-panel .subtitle { color: var(--text-faint); font-size: 12px; margin: 0 0 16px; }
+
+.merge-sides { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: stretch; }
+.merge-side {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 9px 11px; min-width: 0;
+}
+.merge-side.survivor { border-color: #3d668a; background: #1b2733; }
+.merge-side .role {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--text-faint); margin-bottom: 3px;
+}
+.merge-side .who { font-weight: 500; word-break: break-word; }
+.merge-side .swap { margin-top: 8px; }
+.merge-arrow { display: grid; place-items: center; color: var(--text-faint); }
+
+.merge-mode { display: flex; gap: 16px; margin: 18px 0 10px; }
+.merge-mode label { display: flex; align-items: center; gap: 6px; color: var(--text-dim); cursor: pointer; }
+
+.merge-conflicts { display: flex; flex-direction: column; gap: 9px; }
+.merge-conflict { border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; }
+.merge-conflict .field {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--text-faint); margin-bottom: 5px;
+}
+.merge-conflict .choices { display: flex; flex-direction: column; gap: 4px; }
+.merge-conflict label { display: flex; align-items: flex-start; gap: 7px; cursor: pointer; }
+.merge-conflict .value { word-break: break-word; }
+.merge-conflict.resolved-automatically .choices { opacity: .5; pointer-events: none; }
+
+.merge-effect { color: var(--text-dim); font-size: 12px; margin: 16px 0 6px; }
+.merge-note {
+  font-size: 12px; color: var(--text-dim);
+  background: var(--bg-input); border-radius: var(--radius);
+  padding: 7px 9px; margin: 0 0 16px;
+}
+.modal-actions { display: flex; gap: 7px; }
+.modal-actions button { flex: 0 0 auto; padding: 7px 16px; }
+
+.match-strong { color: #7fb069; }
+.match-weak { color: var(--text-faint); }

@@ -66,6 +66,40 @@
         </div>
       </main>
 
+      <div class="modal" id="merge-modal" hidden>
+        <div class="modal-panel" role="dialog" aria-labelledby="merge-heading">
+          <button class="close" id="merge-close" aria-label="Close">×</button>
+          <h2 id="merge-heading">Merge records</h2>
+          <p class="subtitle" id="merge-subtitle"></p>
+
+          <div class="merge-sides" id="merge-sides"></div>
+
+          <div id="merge-conflicts-block" hidden>
+            <div class="merge-mode">
+              <label>
+                <input type="radio" name="merge-mode" value="survivor" checked>
+                Keep the survivor's values
+              </label>
+              <label>
+                <input type="radio" name="merge-mode" value="manual">
+                Choose field by field
+              </label>
+            </div>
+            <div id="merge-conflicts" class="merge-conflicts"></div>
+          </div>
+
+          <p class="merge-effect" id="merge-effect"></p>
+          <p class="merge-note">
+            The absorbed record is kept and hidden, not deleted, so this can be undone.
+          </p>
+
+          <div class="modal-actions">
+            <button id="merge-confirm" class="primary">Merge</button>
+            <button id="merge-cancel" class="ghost">Cancel</button>
+          </div>
+        </div>
+      </div>
+
       <aside class="review" id="review" hidden>
         <button class="close" id="review-close" aria-label="Close">×</button>
         <h2 id="review-title">Review</h2>

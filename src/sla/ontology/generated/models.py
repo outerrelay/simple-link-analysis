@@ -134,11 +134,15 @@ class Document(EntityBase):
 
 
 class EmailAddress(EntityBase):
-    """An email address."""
+    """
+    An email address, canonical on its lowercased form so that a shared mailbox
+    links the people who use it.
+    """
     type: Literal["EmailAddress"] = "EmailAddress"
     name: str = Field(description='Primary display name for the entity.')
     aliases: list[str] = Field(default_factory=list, description='Alternative names, transliterations and former names.')
     notes: str | None = Field(default=None, description='Free-text analyst notes.')
+    address: str = Field(description='The address, lowercased. Identity.')
     domain: str | None = Field(default=None, description='Domain part, indexed so shared domains are findable.')
 
 
@@ -222,11 +226,16 @@ class Person(EntityBase):
 
 
 class PhoneNumber(EntityBase):
-    """A telephone number, stored in E.164 form where possible."""
+    """
+    A telephone number. Canonical on its E.164 form, so that two people who both use
+    a number are attached to the same node — which is the only reason to model a
+    phone number as a node at all.
+    """
     type: Literal["PhoneNumber"] = "PhoneNumber"
     name: str = Field(description='Primary display name for the entity.')
     aliases: list[str] = Field(default_factory=list, description='Alternative names, transliterations and former names.')
     notes: str | None = Field(default=None, description='Free-text analyst notes.')
+    e164: str = Field(description='The number in E.164 form, e.g. +4712345678. Identity.')
     country: str | None = Field(default=None, description='Country the number is registered in.')
     line_type: Literal["mobile", "landline", "voip", "fax", "unknown"] | None = Field(default=None, description='Kind of line.')
 
@@ -319,8 +328,8 @@ class Website(EntityBase):
     name: str = Field(description='Primary display name for the entity.')
     aliases: list[str] = Field(default_factory=list, description='Alternative names, transliterations and former names.')
     notes: str | None = Field(default=None, description='Free-text analyst notes.')
-    url: str = Field(description='Canonical URL.')
-    domain: str | None = Field(default=None, description='Registered domain.')
+    url: str | None = Field(default=None, description='Canonical URL.')
+    domain: str = Field(description='Registered domain, lowercased and without a leading www. Identity: the ontology treats a Website as a site, not a page.')
 
 
 # ----------------------------------------------------------------------

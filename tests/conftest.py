@@ -94,7 +94,9 @@ async def neo4j_driver() -> AsyncIterator:
     """
     settings = scratch_neo4j_settings()
     driver = AsyncGraphDatabase.driver(
-        settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
+        settings.neo4j_uri,
+        auth=(settings.neo4j_user, settings.neo4j_password),
+        notifications_disabled_categories=["UNRECOGNIZED"],
     )
     try:
         await driver.verify_connectivity()

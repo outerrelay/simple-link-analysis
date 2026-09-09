@@ -276,3 +276,54 @@ Accepting writes to Neo4j, which says nothing about which chart the analyst is
 looking at. Without an explicit placement the accepted entities were saved and
 then vanished from the canvas — visible only in a browser, not in any unit
 test.
+
+
+## 22. Canonical types are declared in the ontology, not special-cased
+
+`canonical_key` on an entity type means one node per distinct value of those
+properties, enforced by a generated uniqueness constraint. `Identifier` used to
+be hard-coded in the Cypher generator; now `PhoneNumber`, `EmailAddress` and
+`Website` join it by declaration.
+
+This is the point of modelling a phone number as a node rather than a property.
+Before the change, two people who used the same number got two separate nodes
+and appeared unconnected — the same bug the LEI work hit in M2, still present
+in three other types.
+
+Addresses are deliberately **not** canonical. Address text varies too much for
+a normal form to be trustworthy, and over-merging distinct addresses would be
+worse than leaving duplicates for a human to spot.
+
+## 23. Merging is explicit, reversible, and separate from SAME_AS
+
+Two decisions that sound alike and are not:
+
+- **`SAME_AS` confirmed** is a claim about the world: these two records denote
+  one thing. It changes no structure.
+- **Merge** is an operation on the store: combine them into one node.
+
+Confirming the first offers the second and never performs it, because keeping
+two source records distinct for audit is a legitimate choice.
+
+A merge keeps the absorbed node, marked `merged_into` the survivor and hidden
+from queries, with a snapshot of both nodes and all the absorbed node's edges
+so it can be undone. Edges move to the survivor; duplicate edges collapse,
+combining their assertion lists; an edge between the two is dropped, since it
+would become a loop. Assertions are repointed too — leaving them attached to a
+hidden node would strand the provenance.
+
+Conflicting properties keep the survivor's value by default, with a field-by-
+field mode for when that is not good enough. Whichever *name* loses is kept as
+an alias, in whichever direction it loses: an early version only ever preserved
+the absorbed record's name, so choosing the other way silently discarded a
+spelling that some source had used.
+
+## 24. The undo record is written before the graph is touched
+
+The graph and the application store cannot share a transaction, so the ordering
+decides which way a failure hurts. A merge record with no merge behind it is
+harmless and detectable; a merge with no record cannot be undone. So the
+snapshot is written first and discarded if the merge then fails.
+
+Found by accident: deleting the SQLite file under a running server produced
+exactly the bad case, a completed merge with no way back.

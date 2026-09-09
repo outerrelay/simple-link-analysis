@@ -204,6 +204,35 @@ class Job(Base):
     proposal_set_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     """Set once the action has produced something to review."""
 
+    result: Mapped[dict] = mapped_column(JSON, default=dict)
+    """Anything the action reports that is not a proposed graph write, such as
+    the matches from a duplicate check."""
+
     user_id: Mapped[str] = mapped_column(String(64), default=LOCAL_USER, index=True)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class MergeRecord(Base):
+    """A merge that was carried out, and everything needed to undo it.
+
+    Kept in the application store with the rest of the audit trail. The
+    snapshot holds both nodes' properties and the absorbed node's edges as they
+    stood before the merge.
+    """
+
+    __tablename__ = "merge_records"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_new_id)
+    survivor_id: Mapped[str] = mapped_column(String(36), index=True)
+    absorbed_id: Mapped[str] = mapped_column(String(36), index=True)
+    entity_type: Mapped[str] = mapped_column(String(64))
+    summary: Mapped[str] = mapped_column(Text, default="")
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    resolutions: Mapped[dict] = mapped_column(JSON, default=dict)
+    """Which value was kept for each conflicting property."""
+
+    undone: Mapped[bool] = mapped_column(Boolean, default=False)
+    user_id: Mapped[str] = mapped_column(String(64), default=LOCAL_USER, index=True)
+    merged_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    undone_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

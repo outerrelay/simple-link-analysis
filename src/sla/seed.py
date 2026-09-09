@@ -188,7 +188,9 @@ async def main() -> None:
     settings = get_settings()
     ontology = load()
     driver = AsyncGraphDatabase.driver(
-        settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
+        settings.neo4j_uri,
+        auth=(settings.neo4j_user, settings.neo4j_password),
+        notifications_disabled_categories=["UNRECOGNIZED"],
     )
     try:
         await schema.apply(driver, settings.neo4j_database)

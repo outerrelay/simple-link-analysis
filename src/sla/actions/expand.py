@@ -24,6 +24,7 @@ class ExpandFromDatabase:
     output_types = ("Thing",)
     default_policy = WritePolicy.AUTO_COMMIT
     requires: tuple[str, ...] = ()
+    external = False
 
     async def run(self, context: ActionContext) -> Proposal:
         depth = int(context.options.get("depth", 1) or 1)

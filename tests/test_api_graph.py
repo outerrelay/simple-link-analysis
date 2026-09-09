@@ -25,7 +25,9 @@ async def _seed(settings: Settings) -> dict[str, EntityRecord]:
     across two loops is what the Neo4j async driver refuses to do.
     """
     driver = AsyncGraphDatabase.driver(
-        settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
+        settings.neo4j_uri,
+        auth=(settings.neo4j_user, settings.neo4j_password),
+        notifications_disabled_categories=["UNRECOGNIZED"],
     )
     try:
         await driver.verify_connectivity()
@@ -61,7 +63,9 @@ async def _seed(settings: Settings) -> dict[str, EntityRecord]:
 
 async def _teardown(settings: Settings) -> None:
     driver = AsyncGraphDatabase.driver(
-        settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
+        settings.neo4j_uri,
+        auth=(settings.neo4j_user, settings.neo4j_password),
+        notifications_disabled_categories=["UNRECOGNIZED"],
     )
     try:
         await schema.drop_all_data(driver, settings.neo4j_database)

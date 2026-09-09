@@ -9,6 +9,7 @@ import { api } from './api.js';
 import { showMenu } from './contextmenu.js';
 import { hideInspector, showEntity, showRelationship } from './inspector.js';
 import { LAYOUTS, runLayout } from './layouts.js';
+import { initMerge, openMerge } from './merge.js';
 import { close as closeReview, initReview, showProposal } from './review.js';
 import { buildStylesheet, toEdge, toNode } from './style.js';
 
@@ -22,6 +23,9 @@ const state = {
 };
 
 const $ = (id) => document.getElementById(id);
+
+/** Actions with their own menu entries, so the generic list skips them. */
+const HANDLED_SEPARATELY = new Set(['expand.database', 'identity.check']);
 
 function setStatus(message, level = '') {
   const status = $('status');
@@ -56,6 +60,10 @@ async function start() {
   buildLegend();
   wireCanvasEvents();
   wireChrome();
+  initMerge({
+    onMerged: onMerged,
+    onError: (error) => setStatus(`Merge failed: ${error.message}`, 'error'),
+  });
   initReview({
     onDecided: onProposalDecided,
     onDismiss: clearProvisional,
@@ -154,7 +162,10 @@ function openNodeMenu(node, renderedPosition) {
 
   // Expansion reads the database; the rest reach outside it. Keeping them in
   // separate sections makes the difference visible before you click.
-  const external = actions.filter((a) => a.id !== 'expand.database');
+  // Two actions have dedicated entries elsewhere in this menu, because they
+  // do more than run and report: expansion has its own preview variant, and
+  // the duplicate check offers a merge on each match.
+  const external = actions.filter((a) => !HANDLED_SEPARATELY.has(a.id));
 
   const sections = [
     {
@@ -210,6 +221,29 @@ function openNodeMenu(node, renderedPosition) {
         disabled: !action.available,
         onSelect: () => runAction(action, node.id()),
       })),
+    },
+    {
+      items: [
+        {
+          label: 'Check for duplicates',
+          detail: 'Look for other records that may be the same thing.',
+          onSelect: () => checkForDuplicates(node.id()),
+        },
+        ...(selected.length === 2 && selected.contains(node)
+          ? [
+              {
+                label: 'Merge these two…',
+                detail:
+                  'Combine them into one record. You choose which survives, and ' +
+                  'it can be undone.',
+                onSelect: () => {
+                  const [a, b] = selected.map((n) => n.id());
+                  openMerge(a, b);
+                },
+              },
+            ]
+          : []),
+      ],
     },
     {
       items: [
@@ -452,6 +486,71 @@ async function reloadChartGraph() {
     chart.placements.map((p) => [p.entity_id, { x: p.x, y: p.y }]),
   ) });
   state.cy.nodes().forEach((n) => n.scratch('placed', true));
+}
+
+/** Ask whether this node is already in the database, and offer to merge. */
+async function checkForDuplicates(entityId) {
+  try {
+    setStatus('Checking for duplicates…');
+    const matches = await api.matchesFor(entityId);
+    if (matches.length === 0) {
+      setStatus('No possible duplicates found');
+      return;
+    }
+
+    // Put the matches on the canvas so they can be seen in context, then offer
+    // each one as a merge. Nothing is combined without an explicit choice.
+    const graph = await api.expand([entityId, ...matches.map((m) => m.entity_id)], {
+      depth: 1,
+    });
+    mergeIntoCanvas(graph);
+    await persistNewNodes();
+
+    const node = state.cy.getElementById(entityId);
+    const position = node.nonempty()
+      ? (() => {
+          const container = $('cy').getBoundingClientRect();
+          const rendered = node.renderedPosition();
+          return { x: container.left + rendered.x, y: container.top + rendered.y };
+        })()
+      : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+
+    showMenu(
+      position,
+      [
+        {
+          label: 'Possibly the same as',
+          items: matches.map((match) => ({
+            label: `${match.name} — ${match.reason}`,
+            detail: `${match.strength} match. Opens the merge dialog.`,
+            onSelect: () => openMerge(entityId, match.entity_id),
+          })),
+        },
+      ],
+      {
+        title: 'Possible duplicates',
+        subtitle: `${matches.length} found. Nothing is merged until you say so.`,
+      },
+    );
+    setStatus(`${matches.length} possible duplicate${matches.length === 1 ? '' : 's'}`, 'warn');
+  } catch (error) {
+    setStatus(`Duplicate check failed: ${error.message}`, 'error');
+  }
+}
+
+async function onMerged(result, { absorbedId }) {
+  // The absorbed record is hidden now, so take it off the canvas.
+  state.cy.remove(state.cy.getElementById(absorbedId));
+  if (state.chartId) {
+    try {
+      await api.removeNodes(state.chartId, [absorbedId]);
+    } catch {
+      /* the chart will simply skip it on the next load */
+    }
+  }
+  hideInspector();
+  await reloadChartGraph();
+  setStatus(`${result.summary}. Undo from the merge history.`, 'warn');
 }
 
 /* --- graph operations --------------------------------------------------- */

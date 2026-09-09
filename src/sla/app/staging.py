@@ -81,6 +81,13 @@ class Proposal:
     source: ProposedEntity | None = None
     """The record of the call itself, kept so the claims can be re-checked."""
 
+    matches: list[dict[str, Any]] = field(default_factory=list)
+    """Nodes the action wants to point at rather than add.
+
+    A duplicate check answers "look at these", not "add these", so its result
+    reaches the interface through the job rather than as staged writes.
+    """
+
     def __bool__(self) -> bool:
         return bool(self.entities or self.relationships)
 
@@ -398,6 +405,7 @@ class JobRecord:
     message: str
     proposal_set_id: str | None
     subject_entity_id: str | None
+    result: dict[str, Any] = field(default_factory=dict)
 
 
 def create_job(
@@ -420,7 +428,12 @@ def create_job(
 
 
 def finish_job(
-    job_id: str, *, status: str, message: str = "", proposal_set_id: str | None = None
+    job_id: str,
+    *,
+    status: str,
+    message: str = "",
+    proposal_set_id: str | None = None,
+    result: dict[str, Any] | None = None,
 ) -> None:
     with session_scope() as session:
         job = session.get(Job, job_id)
@@ -429,6 +442,7 @@ def finish_job(
         job.status = status
         job.message = message
         job.proposal_set_id = proposal_set_id
+        job.result = json_safe(result or {})
         job.finished_at = datetime.now(tz=UTC)
 
 
@@ -444,4 +458,5 @@ def get_job(job_id: str) -> JobRecord | None:
             message=job.message,
             proposal_set_id=job.proposal_set_id,
             subject_entity_id=job.subject_entity_id,
+            result=job.result or {},
         )

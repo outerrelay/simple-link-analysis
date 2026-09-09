@@ -246,6 +246,20 @@ def _validate_references(spec: OntologySpec, entity_types: dict[str, ResolvedEnt
                     f"{name}.identifiers names {identifier!r}, which is not a "
                     f"property of {name}"
                 )
+        for key in resolved.spec.canonical_key:
+            key_property = resolved.properties.get(key)
+            if key_property is None:
+                errors.append(
+                    f"{name}.canonical_key names {key!r}, which is not a property of {name}"
+                )
+            elif key_property.multi:
+                errors.append(
+                    f"{name}.canonical_key names {key!r}, which is multi-valued; "
+                    f"a canonical key must be single-valued"
+                )
+        if resolved.spec.canonical_key and resolved.abstract:
+            errors.append(f"{name} is abstract, so it cannot have a canonical key")
+
         for placeholder in _placeholders(resolved.spec.display_name):
             if placeholder not in resolved.properties:
                 errors.append(

@@ -77,6 +77,7 @@ class CompaniesHouseProfile:
     output_types = ("Company", "Address")
     default_policy = WritePolicy.REVIEW
     requires = ("companies_house_api_key",)
+    external = True
 
     async def run(self, context: ActionContext) -> Proposal:
         number = _company_number(context)
@@ -94,6 +95,7 @@ class CompaniesHouseOfficers:
     output_types = ("Person", "Address")
     default_policy = WritePolicy.REVIEW
     requires = ("companies_house_api_key",)
+    external = True
 
     async def run(self, context: ActionContext) -> Proposal:
         number = _company_number(context)

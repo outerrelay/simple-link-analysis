@@ -87,7 +87,7 @@ async def test_running_an_action_writes_nothing_to_the_graph(
     """The whole point of staging."""
     person = await a_person(repository)
 
-    staged, accepted = await runner.run_action(
+    run = await runner.run_action(
         FakeAction(),
         entity_id=person.id,
         repository=repository,
@@ -95,14 +95,14 @@ async def test_running_an_action_writes_nothing_to_the_graph(
         settings=settings,
     )
 
-    assert accepted is None
-    assert len(staged.entities) == 1
+    assert run.accepted is None
+    assert len(run.staged.entities) == 1
     assert await repository.find_entities(entity_type="Company") == []
 
 
 async def test_accepting_writes_to_the_graph(repository, ontology, settings) -> None:
     person = await a_person(repository)
-    staged, _ = await runner.run_action(
+    run = await runner.run_action(
         FakeAction(),
         entity_id=person.id,
         repository=repository,
@@ -111,8 +111,8 @@ async def test_accepting_writes_to_the_graph(repository, ontology, settings) -> 
     )
 
     result = await runner.accept(
-        staged.id,
-        item_ids=[item.id for item in staged.items],
+        run.staged.id,
+        item_ids=[item.id for item in run.staged.items],
         rejected_ids=[],
         repository=repository,
     )
@@ -125,7 +125,7 @@ async def test_accepting_writes_to_the_graph(repository, ontology, settings) -> 
 
 async def test_rejecting_writes_nothing_and_is_remembered(repository, ontology, settings) -> None:
     person = await a_person(repository)
-    staged, _ = await runner.run_action(
+    run = await runner.run_action(
         FakeAction(),
         entity_id=person.id,
         repository=repository,
@@ -133,24 +133,24 @@ async def test_rejecting_writes_nothing_and_is_remembered(repository, ontology, 
         settings=settings,
     )
 
-    await runner.reject_all(staged.id)
+    await runner.reject_all(run.staged.id)
 
     assert await repository.find_entities(entity_type="Company") == []
 
-    again, _ = await runner.run_action(
+    second = await runner.run_action(
         FakeAction(),
         entity_id=person.id,
         repository=repository,
         ontology=ontology,
         settings=settings,
     )
-    assert again.items == [], "the refusal should stop it being proposed again"
+    assert second.staged.items == [], "the refusal should stop it being proposed again"
 
 
 async def test_partial_acceptance(repository, ontology, settings) -> None:
     """Accept the company but not the ownership claim."""
     person = await a_person(repository)
-    staged, _ = await runner.run_action(
+    run = await runner.run_action(
         FakeAction(),
         entity_id=person.id,
         repository=repository,
@@ -159,9 +159,9 @@ async def test_partial_acceptance(repository, ontology, settings) -> None:
     )
 
     result = await runner.accept(
-        staged.id,
-        item_ids=[staged.entities[0].id],
-        rejected_ids=[staged.relationships[0].id],
+        run.staged.id,
+        item_ids=[run.staged.entities[0].id],
+        rejected_ids=[run.staged.relationships[0].id],
         repository=repository,
     )
 
@@ -177,7 +177,7 @@ async def test_partial_acceptance(repository, ontology, settings) -> None:
 async def test_auto_commit_writes_immediately(repository, ontology, settings) -> None:
     person = await a_person(repository)
 
-    staged, accepted = await runner.run_action(
+    run = await runner.run_action(
         FakeAction(policy=WritePolicy.AUTO_COMMIT),
         entity_id=person.id,
         repository=repository,
@@ -185,10 +185,10 @@ async def test_auto_commit_writes_immediately(repository, ontology, settings) ->
         settings=settings,
     )
 
-    assert accepted is not None
-    assert accepted.entities_written == 1
+    assert run.accepted is not None
+    assert run.accepted.entities_written == 1
     assert len(await repository.find_entities(entity_type="Company")) == 1
-    assert staging.get_set(staged.id).status == "accepted"
+    assert staging.get_set(run.staged.id).status == "accepted"
 
 
 async def test_per_invocation_policy_beats_the_action_default(
@@ -197,7 +197,7 @@ async def test_per_invocation_policy_beats_the_action_default(
     """An action that normally commits can be asked to preview instead."""
     person = await a_person(repository)
 
-    _, accepted = await runner.run_action(
+    run = await runner.run_action(
         FakeAction(policy=WritePolicy.AUTO_COMMIT),
         entity_id=person.id,
         repository=repository,
@@ -206,7 +206,7 @@ async def test_per_invocation_policy_beats_the_action_default(
         policy=WritePolicy.REVIEW,
     )
 
-    assert accepted is None
+    assert run.accepted is None
     assert await repository.find_entities(entity_type="Company") == []
 
 
@@ -275,7 +275,7 @@ async def test_one_bad_item_does_not_lose_the_good_ones(
             )
             return Proposal(action_id=self.id, entities=[good, bad], summary="2")
 
-    staged, _ = await runner.run_action(
+    run = await runner.run_action(
         MixedAction(),
         entity_id=person.id,
         repository=repository,
@@ -283,8 +283,8 @@ async def test_one_bad_item_does_not_lose_the_good_ones(
         settings=settings,
     )
     result = await runner.accept(
-        staged.id,
-        item_ids=[item.id for item in staged.items],
+        run.staged.id,
+        item_ids=[item.id for item in run.staged.items],
         rejected_ids=[],
         repository=repository,
     )
@@ -309,7 +309,7 @@ async def test_expand_action_proposes_what_the_graph_already_holds(
         predicate="OWNS", subject_id=person.id, object_id=company.id
     )
 
-    staged, accepted = await runner.run_action(
+    run = await runner.run_action(
         ExpandFromDatabase(),
         entity_id=person.id,
         repository=repository,
@@ -317,8 +317,8 @@ async def test_expand_action_proposes_what_the_graph_already_holds(
         settings=settings,
     )
 
-    assert accepted is not None, "expansion auto-commits; the data is already stored"
-    assert [item.payload["properties"]["name"] for item in staged.entities] == ["Acme AS"]
+    assert run.accepted is not None, "expansion auto-commits; the data is already stored"
+    assert [i.payload["properties"]["name"] for i in run.staged.entities] == ["Acme AS"]
 
 
 # --- registry --------------------------------------------------------------
@@ -376,7 +376,7 @@ async def test_dates_survive_the_round_trip_through_staging(repository, ontology
     )
 
     # Expanding produces a proposal carrying those real date objects.
-    staged, _ = await runner.run_action(
+    run = await runner.run_action(
         ExpandFromDatabase(),
         entity_id=company.id,
         repository=repository,
@@ -384,12 +384,12 @@ async def test_dates_survive_the_round_trip_through_staging(repository, ontology
         settings=settings,
         policy=WritePolicy.REVIEW,
     )
-    payload = next(item.payload for item in staged.entities if item.payload["type"] == "Person")
+    payload = next(item.payload for item in run.staged.entities if item.payload["type"] == "Person")
     assert payload["properties"]["birth_date"] == "1968-04-12", "stored as an ISO string"
 
     await runner.accept(
-        staged.id,
-        item_ids=[item.id for item in staged.items],
+        run.staged.id,
+        item_ids=[item.id for item in run.staged.items],
         rejected_ids=[],
         repository=repository,
     )

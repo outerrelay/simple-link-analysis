@@ -11,7 +11,7 @@
 # change: `sla-ontology diff` will say so and a migration is required.
 # =====================================================================
 
-version: 0.1.0
+version: 0.2.0
 name: Simple Link Analysis Ontology
 description: >-
   An ontology for corporate and individual due diligence: who owns what,
@@ -186,6 +186,7 @@ entity_types:
       authority:
         type: string
         description: Body that issued it.
+    canonical_key: [scheme, value]
 
   Address:
     label: Address
@@ -225,12 +226,21 @@ entity_types:
   PhoneNumber:
     label: Phone number
     plural: Phone numbers
-    description: A telephone number, stored in E.164 form where possible.
+    description: >-
+      A telephone number. Canonical on its E.164 form, so that two people who
+      both use a number are attached to the same node — which is the only
+      reason to model a phone number as a node at all.
     extends: Thing
     icon: phone.svg
     color: "#8CD17D"
     display_name: "{name}"
     properties:
+      e164:
+        type: string
+        description: The number in E.164 form, e.g. +4712345678. Identity.
+        required: true
+        indexed: true
+        pii: true
       country:
         type: country
         description: Country the number is registered in.
@@ -238,20 +248,30 @@ entity_types:
         type: enum
         enum: [mobile, landline, voip, fax, unknown]
         description: Kind of line.
+    canonical_key: [e164]
 
   EmailAddress:
     label: Email address
     plural: Email addresses
-    description: An email address.
+    description: >-
+      An email address, canonical on its lowercased form so that a shared
+      mailbox links the people who use it.
     extends: Thing
     icon: email.svg
     color: "#8CD17D"
     display_name: "{name}"
     properties:
+      address:
+        type: email
+        description: The address, lowercased. Identity.
+        required: true
+        indexed: true
+        pii: true
       domain:
         type: string
         description: Domain part, indexed so shared domains are findable.
         indexed: true
+    canonical_key: [address]
 
   Website:
     label: Website
@@ -265,11 +285,14 @@ entity_types:
       url:
         type: url
         description: Canonical URL.
-        required: true
       domain:
         type: string
-        description: Registered domain.
+        description: >-
+          Registered domain, lowercased and without a leading www. Identity:
+          the ontology treats a Website as a site, not a page.
+        required: true
         indexed: true
+    canonical_key: [domain]
 
   # --- Assets --------------------------------------------------------
 

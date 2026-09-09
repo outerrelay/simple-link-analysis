@@ -51,6 +51,11 @@ class JobOut(BaseModel):
     status: str
     message: str = ""
     proposal_set_id: str | None = None
+    result: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Anything reported that is not a proposed write, such as "
+        "the matches from a duplicate check.",
+    )
 
 
 class ProposalItemOut(BaseModel):
@@ -123,7 +128,7 @@ async def run(
 
     async def execute() -> None:
         try:
-            staged, accepted = await runner.run_action(
+            run = await runner.run_action(
                 action,
                 entity_id=request.entity_id,
                 repository=repository,
@@ -133,17 +138,21 @@ async def run(
                 chart_id=request.chart_id,
                 policy=request.policy,
             )
-            message = staged.summary
-            if accepted is not None:
+            message = run.staged.summary
+            if run.accepted is not None and run.staged.items:
                 message = (
-                    f"{staged.summary} — committed "
-                    f"({accepted.entities_written} entities, "
-                    f"{accepted.relationships_written} relationships)"
+                    f"{run.staged.summary} — committed "
+                    f"({run.accepted.entities_written} entities, "
+                    f"{run.accepted.relationships_written} relationships)"
                 )
-                if accepted.errors:
-                    message += f"; {len(accepted.errors)} could not be written"
+                if run.accepted.errors:
+                    message += f"; {len(run.accepted.errors)} could not be written"
             staging.finish_job(
-                job_id, status="succeeded", message=message, proposal_set_id=staged.id
+                job_id,
+                status="succeeded",
+                message=message,
+                proposal_set_id=run.staged.id,
+                result={"matches": run.matches} if run.matches else {},
             )
         except ActionError as exc:
             staging.finish_job(job_id, status="failed", message=str(exc))
@@ -166,6 +175,7 @@ def get_job(job_id: str) -> JobOut:
         status=job.status,
         message=job.message,
         proposal_set_id=job.proposal_set_id,
+        result=job.result,
     )
 
 
@@ -197,12 +207,18 @@ async def decide(
     Accepted items are written to Neo4j; rejected ones are tombstoned so the
     same suggestion is not made again.
     """
+    staged_before = staging.get_set(set_id)
+    external = bool(
+        staged_before
+        and getattr(registry.all_actions().get(staged_before.action_id), "external", False)
+    )
     try:
         result = await runner.accept(
             set_id,
             item_ids=request.accepted,
             rejected_ids=request.rejected,
             repository=repository,
+            check_duplicates=external,
         )
     except ActionError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -210,8 +226,16 @@ async def decide(
     staged = staging.get_set(set_id)
     assert staged is not None
     out = _to_out(staged, ontology)
+    notes = []
     if result.errors:
-        out.summary = f"{out.summary} — {len(result.errors)} could not be written"
+        notes.append(f"{len(result.errors)} could not be written")
+    if result.duplicate_candidates:
+        notes.append(
+            f"{result.duplicate_candidates} possible duplicate"
+            f"{'' if result.duplicate_candidates == 1 else 's'} found"
+        )
+    if notes:
+        out.summary = f"{out.summary} — {'; '.join(notes)}"
     return out
 
 

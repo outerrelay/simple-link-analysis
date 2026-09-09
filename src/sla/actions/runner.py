@@ -14,7 +14,7 @@ recording the action that produced it, its confidence and its source.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
 from sla.actions.base import Action, ActionContext, ActionError, missing_requirements
@@ -22,9 +22,24 @@ from sla.app import staging
 from sla.app.models import ItemKind, ProposalStatus
 from sla.app.staging import Proposal, ProposedEntity, ProposedRelationship, StagedSet
 from sla.config import Settings, WritePolicy
+from sla.graph.identity import IdentityResolver
 from sla.graph.model import EntityRecord, ExtractionMethod
 from sla.graph.repository import GraphError, GraphRepository
 from sla.ontology import Ontology
+
+
+@dataclass(frozen=True)
+class ActionRun:
+    """What one run of an action produced."""
+
+    staged: StagedSet
+    accepted: AcceptResult | None = None
+    """Set when the policy was auto-commit, so the result was written at once."""
+
+    matches: list[dict] = field(default_factory=list)
+    """Nodes the action wants to point at rather than add, from a duplicate
+    check. Carried on the result rather than in module state, because actions
+    run concurrently as background jobs."""
 
 
 @dataclass(frozen=True)
@@ -32,6 +47,8 @@ class AcceptResult:
     entities_written: int
     relationships_written: int
     errors: list[str]
+    duplicate_candidates: int = 0
+    """Possible duplicates noticed among what was just written."""
 
 
 def resolve_policy(
@@ -55,11 +72,11 @@ async def run_action(
     options: dict[str, object] | None = None,
     chart_id: str | None = None,
     policy: WritePolicy | None = None,
-) -> tuple[StagedSet, AcceptResult | None]:
+) -> ActionRun:
     """Run an action and stage what it produced.
 
-    Returns the staged set, and — when the policy is auto-commit — the result
-    of accepting it immediately.
+    Nothing reaches Neo4j here unless the policy is auto-commit, in which case
+    the staged set is accepted immediately through the same path.
     """
     if missing := missing_requirements(action, settings):
         raise ActionError(f"{action.label} needs {', '.join(missing)} to be configured")
@@ -89,6 +106,7 @@ async def run_action(
     )
     proposal.subject_entity_id = entity_id
     staged = staging.record(proposal, chart_id=chart_id)
+    matches = list(getattr(proposal, "matches", []) or [])
 
     if resolve_policy(action, settings, policy) is WritePolicy.AUTO_COMMIT:
         accepted = await accept(
@@ -97,10 +115,11 @@ async def run_action(
             rejected_ids=[],
             repository=repository,
             action_id=action.id,
+            check_duplicates=getattr(action, "external", False),
         )
-        return staged, accepted
+        return ActionRun(staged=staged, accepted=accepted, matches=matches)
 
-    return staged, None
+    return ActionRun(staged=staged, matches=matches)
 
 
 async def accept(
@@ -110,6 +129,7 @@ async def accept(
     rejected_ids: list[str],
     repository: GraphRepository,
     action_id: str = "",
+    check_duplicates: bool = False,
 ) -> AcceptResult:
     """Write the accepted items to Neo4j and tombstone the rejected ones.
 
@@ -129,6 +149,7 @@ async def accept(
     # Map provisional ids onto whatever the graph ends up holding, so a
     # relationship written afterwards points at the right node.
     resolved: dict[str, str] = {}
+    written_ids: list[str] = []
 
     for item in staged.entities:
         payload = item.payload
@@ -146,6 +167,7 @@ async def accept(
             )
             written = await repository.upsert_entity(record)
             resolved[payload["id"]] = written.id
+            written_ids.append(written.id)
             entities_written += 1
         except GraphError as exc:
             errors.append(f"{payload.get('type', 'entity')}: {exc}")
@@ -173,7 +195,20 @@ async def accept(
             errors.append(f"{payload.get('type', 'relationship')}: {exc}")
 
     staging.decide_items(set_id, accepted=list(chosen), rejected=rejected_ids)
-    return AcceptResult(entities_written, relationships_written, errors)
+
+    # Data from outside is where a company you already hold turns up under a
+    # different name, so look for that now rather than leaving it to be found
+    # by accident. Candidates only — nothing is merged.
+    candidates = 0
+    if check_duplicates and written_ids:
+        resolver = IdentityResolver(
+            repository._driver,  # noqa: SLF001 - same layer, one driver
+            repository._ontology,  # noqa: SLF001
+            repository._database,  # noqa: SLF001
+        )
+        candidates = len(await resolver.propose_candidates())
+
+    return AcceptResult(entities_written, relationships_written, errors, candidates)
 
 
 async def reject_all(set_id: str) -> StagedSet | None:
@@ -197,6 +232,7 @@ def _as_date(value: object) -> date | None:
 
 __all__ = [
     "AcceptResult",
+    "ActionRun",
     "ItemKind",
     "Proposal",
     "ProposalStatus",

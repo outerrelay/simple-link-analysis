@@ -91,6 +91,13 @@ class EntityTypeSpec(BaseModel):
         description="Properties that identify the entity strongly enough to "
         "propose a SAME_AS candidate when two entities share one.",
     )
+    canonical_key: list[str] = Field(
+        default_factory=list,
+        description="Properties that make this type canonical: one node per "
+        "distinct combination, enforced by a uniqueness constraint. Use for "
+        "types whose whole purpose is to be shared, such as a phone number "
+        "two people both use.",
+    )
 
     @model_validator(mode="after")
     def check_property_names(self) -> EntityTypeSpec:

@@ -1,6 +1,6 @@
 // Generated from ontology/ontology.yaml by `sla-ontology generate`.
 // Do not edit by hand: edit the ontology and regenerate.
-// Ontology version: 0.1.0
+// Ontology version: 0.2.0
 
 // --- Identity -----------------------------------------------------
 CREATE CONSTRAINT entity_id_unique IF NOT EXISTS
@@ -21,13 +21,21 @@ FOR (a:Assertion) ON (a.predicate);
 CREATE INDEX assertion_status IF NOT EXISTS
 FOR (a:Assertion) ON (a.status);
 
-// --- Duplicate detection ------------------------------------------
-// Identifier nodes are canonical: one node per (scheme, value), so two
-// entities bearing the same identifier point at the *same* node and the
-// SAME_AS candidate query is a single hop. Uniqueness enforces that, and
-// its backing index makes the lookup cheap.
-CREATE CONSTRAINT identifier_scheme_value_unique IF NOT EXISTS
+// --- Canonical nodes ----------------------------------------------
+// One node per distinct key, so that two entities sharing a phone
+// number or an identifier are attached to the same node and duplicate
+// detection is a single hop.
+CREATE CONSTRAINT email_address_canonical IF NOT EXISTS
+FOR (n:EmailAddress) REQUIRE n.address IS UNIQUE;
+
+CREATE CONSTRAINT identifier_canonical IF NOT EXISTS
 FOR (n:Identifier) REQUIRE (n.scheme, n.value) IS UNIQUE;
+
+CREATE CONSTRAINT phone_number_canonical IF NOT EXISTS
+FOR (n:PhoneNumber) REQUIRE n.e164 IS UNIQUE;
+
+CREATE CONSTRAINT website_canonical IF NOT EXISTS
+FOR (n:Website) REQUIRE n.domain IS UNIQUE;
 
 // --- Property indexes ---------------------------------------------
 CREATE INDEX address_city IF NOT EXISTS
@@ -146,9 +154,6 @@ FOR (n:WebPage) ON (n.name);
 
 CREATE INDEX web_page_url IF NOT EXISTS
 FOR (n:WebPage) ON (n.url);
-
-CREATE INDEX website_domain IF NOT EXISTS
-FOR (n:Website) ON (n.domain);
 
 CREATE INDEX website_name IF NOT EXISTS
 FOR (n:Website) ON (n.name);

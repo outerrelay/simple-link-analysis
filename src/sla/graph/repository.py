@@ -174,40 +174,66 @@ class GraphRepository:
             record = await result.single()
         return bool(record and record["deleted"])
 
-    async def upsert_identifier(
-        self, scheme: str, value: str, *, authority: str | None = None
-    ) -> EntityRecord:
-        """Get or create the canonical node for one issued identifier.
+    async def upsert_canonical(self, entity_type: str, properties: dict[str, Any]) -> EntityRecord:
+        """Get or create the one node standing for this real-world thing.
 
-        Identifier nodes are keyed by ``(scheme, value)`` rather than by a fresh
-        UUID, so two entities bearing the same LEI point at the *same* node.
-        That is what makes duplicate detection a single hop; minting a new node
-        per mention would make it invisible.
+        A canonical type is keyed by the properties the ontology names in
+        ``canonical_key`` rather than by a fresh UUID, so two people who use
+        the same phone number are attached to the *same* node. Minting a node
+        per mention would leave nothing shared, and modelling a phone number
+        as a node rather than a property would have been pointless.
         """
-        query = """
-        MERGE (n:Identifier:Thing {scheme: $scheme, value: $value})
-        ON CREATE SET n.id = $id, n.created_at = $now, n.suppressed = false,
-                      n.type = 'Identifier', n.name = $name
-        SET n.updated_at = $now,
-            n.ontology_version = $ontology_version,
-            n.observed_at = $now,
-            n.authority = coalesce($authority, n.authority)
+        resolved = self._require_concrete(entity_type)
+        keys = resolved.spec.canonical_key
+        if not keys:
+            raise GraphError(f"{entity_type} is not a canonical type")
+
+        properties = self._validate_properties(entity_type, resolved.properties, properties)
+        missing = [key for key in keys if properties.get(key) in (None, "")]
+        if missing:
+            raise GraphError(f"{entity_type} needs {missing} to identify it")
+
+        key_values = {key: properties[key] for key in keys}
+        rest = {key: value for key, value in properties.items() if key not in key_values}
+        match = ", ".join(f"{key}: ${key}" for key in keys)
+        labels = ":".join(resolved.labels)
+
+        query = f"""
+        MERGE (n:{labels} {{{match}}})
+        ON CREATE SET n.id = $__id, n.created_at = $__now, n.suppressed = false,
+                      n.type = $__type
+        SET n.updated_at = $__now,
+            n.ontology_version = $__version,
+            n.observed_at = $__now,
+            n += $__rest
         RETURN n
         """
         async with self._session() as session:
             result = await session.run(
                 query,  # type: ignore[arg-type]
-                scheme=scheme,
-                value=value,
-                id=new_id(),
-                name=f"{scheme}:{value}",
-                authority=authority,
-                ontology_version=self._ontology.version,
-                now=utcnow(),
+                __id=new_id(),
+                __type=entity_type,
+                __version=self._ontology.version,
+                __now=utcnow(),
+                __rest=rest,
+                **key_values,
             )
             record = await result.single()
         assert record is not None
         return entity_from_node(record["n"])
+
+    async def upsert_identifier(
+        self, scheme: str, value: str, *, authority: str | None = None
+    ) -> EntityRecord:
+        """Convenience wrapper for the commonest canonical type."""
+        properties: dict[str, Any] = {
+            "name": f"{scheme}:{value}",
+            "scheme": scheme,
+            "value": value,
+        }
+        if authority:
+            properties["authority"] = authority
+        return await self.upsert_canonical("Identifier", properties)
 
     # --- assertions and the edges derived from them ----------------------
 

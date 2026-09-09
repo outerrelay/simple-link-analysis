@@ -20,7 +20,9 @@ from tests.conftest import scratch_neo4j_settings
 
 async def _seed(settings: Settings) -> dict[str, str]:
     driver = AsyncGraphDatabase.driver(
-        settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
+        settings.neo4j_uri,
+        auth=(settings.neo4j_user, settings.neo4j_password),
+        notifications_disabled_categories=["UNRECOGNIZED"],
     )
     try:
         await driver.verify_connectivity()
@@ -45,6 +47,19 @@ async def _seed(settings: Settings) -> dict[str, str]:
         await driver.close()
 
 
+async def _clear(settings: Settings) -> None:
+    """Leave the database as we found it, so later tests are not skipped."""
+    driver = AsyncGraphDatabase.driver(
+        settings.neo4j_uri,
+        auth=(settings.neo4j_user, settings.neo4j_password),
+        notifications_disabled_categories=["UNRECOGNIZED"],
+    )
+    try:
+        await schema.drop_all_data(driver, settings.neo4j_database)
+    finally:
+        await driver.close()
+
+
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     settings = scratch_neo4j_settings()
@@ -61,6 +76,7 @@ def client(tmp_path, monkeypatch):
         yield test_client, ids
 
     database.dispose()
+    asyncio.run(_clear(settings))
     get_settings.cache_clear()
 
 

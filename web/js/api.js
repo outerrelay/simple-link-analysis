@@ -86,6 +86,23 @@ export const api = {
   deleteFromGraph: (entityId, { suppress = true } = {}) =>
     request(`/api/actions/entity/${entityId}?suppress=${suppress}`, { method: 'DELETE' }),
 
+  matchesFor: (entityId) => request(`/api/merges/matches/${entityId}`),
+
+  mergePreview: (survivorId, absorbedId) =>
+    request(`/api/merges/preview?${query({ survivor_id: survivorId, absorbed_id: absorbedId })}`),
+
+  merge: (survivorId, absorbedId, resolutions = {}) =>
+    request('/api/merges', {
+      method: 'POST',
+      body: JSON.stringify({
+        survivor_id: survivorId,
+        absorbed_id: absorbedId,
+        resolutions,
+      }),
+    }),
+
+  undoMerge: (mergeId) => request(`/api/merges/${mergeId}/undo`, { method: 'POST' }),
+
   removeNodes: (chartId, entityIds) =>
     request(`/api/charts/${chartId}/nodes/remove`, {
       method: 'POST',

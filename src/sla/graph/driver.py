@@ -39,6 +39,10 @@ async def connect(settings: Settings) -> AsyncDriver:
         _driver = AsyncGraphDatabase.driver(
             settings.neo4j_uri,
             auth=(settings.neo4j_user, settings.neo4j_password),
+            # Expansion names every relationship type the ontology declares,
+            # so a database that does not yet hold one of them warns on every
+            # query. That is expected, not a problem worth logging.
+            notifications_disabled_categories=["UNRECOGNIZED"],
         )
     return _driver
 

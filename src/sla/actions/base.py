@@ -56,6 +56,14 @@ class Action(Protocol):
     requires: tuple[str, ...]
     """Settings that must be non-empty, e.g. ``companies_house_api_key``."""
 
+    external: bool
+    """True when the action brings in data from outside the database.
+
+    External results are checked for duplicates automatically once accepted,
+    because a registry lookup is exactly where a company you already hold
+    arrives under a slightly different name.
+    """
+
     async def run(self, context: ActionContext) -> Proposal: ...
 
 

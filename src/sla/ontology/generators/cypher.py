@@ -42,7 +42,7 @@ def render(ontology: Ontology) -> str:
     lines.append("")
 
     lines.extend(_provenance_section())
-    lines.extend(_identifier_section(ontology))
+    lines.extend(_canonical_section(ontology))
     lines.extend(_property_index_section(ontology))
 
     return "\n".join(lines).rstrip() + "\n"
@@ -64,25 +64,35 @@ def _provenance_section() -> list[str]:
     ]
 
 
-def _identifier_section(ontology: Ontology) -> list[str]:
-    """The composite index that makes duplicate detection cheap.
+def _canonical_section(ontology: Ontology) -> list[str]:
+    """Uniqueness for every type the ontology declares canonical.
 
-    Finding entities that share a strong identifier is the query behind every
-    ``SAME_AS`` candidate, so it gets an index on the pair rather than on each
-    property separately.
+    A canonical type exists to be shared: one node per phone number, per
+    identifier, per domain, so that two entities using the same one point at
+    the *same* node. That is the only reason to model them as nodes rather
+    than properties, and without the constraint nothing enforces it.
     """
-    if "Identifier" not in ontology.entity_types:
+    canonical = {
+        name: resolved.spec.canonical_key
+        for name, resolved in sorted(ontology.concrete_entity_types.items())
+        if resolved.spec.canonical_key
+    }
+    if not canonical:
         return []
-    return [
-        "// --- Duplicate detection ------------------------------------------",
-        "// Identifier nodes are canonical: one node per (scheme, value), so two",
-        "// entities bearing the same identifier point at the *same* node and the",
-        "// SAME_AS candidate query is a single hop. Uniqueness enforces that, and",
-        "// its backing index makes the lookup cheap.",
-        "CREATE CONSTRAINT identifier_scheme_value_unique IF NOT EXISTS",
-        "FOR (n:Identifier) REQUIRE (n.scheme, n.value) IS UNIQUE;",
-        "",
+
+    lines = [
+        "// --- Canonical nodes ----------------------------------------------",
+        "// One node per distinct key, so that two entities sharing a phone",
+        "// number or an identifier are attached to the same node and duplicate",
+        "// detection is a single hop.",
     ]
+    for name, keys in canonical.items():
+        properties = ", ".join(f"n.{key}" for key in keys)
+        subject = properties if len(keys) == 1 else f"({properties})"
+        lines.append(f"CREATE CONSTRAINT {_snake(name)}_canonical IF NOT EXISTS")
+        lines.append(f"FOR (n:{name}) REQUIRE {subject} IS UNIQUE;")
+        lines.append("")
+    return lines
 
 
 def _property_index_section(ontology: Ontology) -> list[str]:
@@ -95,9 +105,10 @@ def _property_index_section(ontology: Ontology) -> list[str]:
         indexed = sorted(
             prop_name for prop_name, prop in resolved.properties.items() if prop.indexed
         )
+        canonical = set(resolved.spec.canonical_key)
         for prop_name in indexed:
-            if name == "Identifier" and prop_name in {"scheme", "value"}:
-                continue  # covered by the composite index above
+            if prop_name in canonical:
+                continue  # already covered by the uniqueness constraint above
             lines.append(
                 f"CREATE INDEX {_index_name(name, prop_name)} IF NOT EXISTS\n"
                 f"FOR (n:{name}) ON (n.{prop_name});"

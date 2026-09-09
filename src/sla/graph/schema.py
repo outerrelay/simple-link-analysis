@@ -18,6 +18,10 @@ from sla.ontology.cli import REPO_ROOT
 CONSTRAINTS_PATH = REPO_ROOT / "ontology" / "build" / "constraints.cypher"
 
 
+class SchemaError(Exception):
+    """A constraint or index could not be applied to this database."""
+
+
 def statements(path: Path | None = None) -> list[str]:
     """Split the generated script into individual executable statements.
 
@@ -42,7 +46,16 @@ async def apply(driver: AsyncDriver, database: str, path: Path | None = None) ->
     applied = 0
     async with driver.session(database=database) as session:
         for statement in statements(path):
-            await session.run(statement)  # type: ignore[arg-type]
+            try:
+                await session.run(statement)  # type: ignore[arg-type]
+            except Exception as exc:
+                first_line = statement.splitlines()[0]
+                raise SchemaError(
+                    f"could not apply schema statement:\n  {first_line}\n{exc}\n\n"
+                    f"A constraint that cannot be created usually means the database "
+                    f"predates the current ontology. Check `sla-ontology diff` and run "
+                    f"the matching script in migrations/."
+                ) from exc
             applied += 1
     return applied
 

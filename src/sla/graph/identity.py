@@ -18,12 +18,27 @@ not undone by re-running detection.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from neo4j import AsyncDriver
 
 from sla.graph.model import new_id, utcnow
 from sla.ontology import Ontology
+
+
+@dataclass(frozen=True)
+class Match:
+    """A node that may be the same thing as the one asked about."""
+
+    entity_id: str
+    name: str
+    type: str
+    reason: str
+    """Why it matched, so the analyst can judge it rather than trust a score."""
+
+    strength: str
+    """``strong`` for a shared issued identifier, ``weak`` for a name match."""
 
 
 @dataclass(frozen=True)
@@ -46,6 +61,139 @@ class IdentityResolver:
 
     def _session(self):
         return self._driver.session(database=self._database)
+
+    async def matches_for(self, entity_id: str, *, limit: int = 20) -> list[Match]:
+        """Answer "is this already in the database?" for one node.
+
+        Ordered strongest first. A shared issued identifier is near-conclusive;
+        an exact registration number within one jurisdiction nearly so; a name
+        match is a prompt to look, nothing more. The reason is returned with
+        every match because a bare similarity score tells an analyst nothing
+        they can check.
+        """
+        matches: dict[str, Match] = {}
+
+        for finder in (
+            self._matches_by_identifier,
+            self._matches_by_strong_property,
+            self._matches_by_name,
+        ):
+            for match in await finder(entity_id):
+                matches.setdefault(match.entity_id, match)
+            if len(matches) >= limit:
+                break
+
+        order = {"strong": 0, "weak": 1}
+        return sorted(matches.values(), key=lambda m: (order[m.strength], m.name))[:limit]
+
+    async def _matches_by_identifier(self, entity_id: str) -> list[Match]:
+        async with self._session() as session:
+            result = await session.run(
+                """
+                MATCH (n:Thing {id: $id})-[:HAS_IDENTIFIER]->(i:Identifier)
+                MATCH (i)<-[:HAS_IDENTIFIER]-(other:Thing)
+                WHERE other.id <> $id AND coalesce(other.suppressed, false) = false
+                RETURN other.id AS id, other.name AS name, other.type AS type,
+                       i.scheme AS scheme, i.value AS value
+                """,  # type: ignore[arg-type]
+                id=entity_id,
+            )
+            return [
+                Match(
+                    entity_id=record["id"],
+                    name=record["name"] or record["id"],
+                    type=record["type"],
+                    reason=f"shares identifier {record['scheme']}:{record['value']}",
+                    strength="strong",
+                )
+                async for record in result
+            ]
+
+    async def _matches_by_strong_property(self, entity_id: str) -> list[Match]:
+        """Same declared identifier property, and same type."""
+        entity = await self._entity(entity_id)
+        if entity is None:
+            return []
+        resolved = self._ontology.entity_type(entity["type"])
+        matches: list[Match] = []
+
+        for property_name in resolved.spec.identifiers:
+            value = entity.get(property_name)
+            if value in (None, "", []):
+                continue
+            async with self._session() as session:
+                result = await session.run(
+                    f"""
+                    MATCH (other:{entity["type"]})
+                    WHERE other.id <> $id
+                      AND other.`{property_name}` = $value
+                      AND coalesce(other.suppressed, false) = false
+                    RETURN other.id AS id, other.name AS name, other.type AS type
+                    """,  # type: ignore[arg-type]
+                    id=entity_id,
+                    value=value,
+                )
+                async for record in result:
+                    matches.append(
+                        Match(
+                            entity_id=record["id"],
+                            name=record["name"] or record["id"],
+                            type=record["type"],
+                            reason=f"same {property_name}: {value}",
+                            strength="strong",
+                        )
+                    )
+        return matches
+
+    async def _matches_by_name(self, entity_id: str) -> list[Match]:
+        """Same type and a similar name — a prompt to look, not a conclusion.
+
+        Comparison is on a loosely normalised name: case folded, punctuation
+        dropped, and common legal-form suffixes removed, so that "Acme AS" and
+        "ACME A/S" meet. Deliberately crude; it proposes, a human disposes.
+        """
+        entity = await self._entity(entity_id)
+        if entity is None or not entity.get("name"):
+            return []
+
+        normalised = _normalise_name(entity["name"])
+        if not normalised:
+            return []
+
+        async with self._session() as session:
+            result = await session.run(
+                f"""
+                MATCH (other:{entity["type"]})
+                WHERE other.id <> $id
+                  AND other.name IS NOT NULL
+                  AND coalesce(other.suppressed, false) = false
+                RETURN other.id AS id, other.name AS name, other.type AS type
+                LIMIT 500
+                """,  # type: ignore[arg-type]
+                id=entity_id,
+            )
+            rows = [dict(record) async for record in result]
+
+        return [
+            Match(
+                entity_id=row["id"],
+                name=row["name"],
+                type=row["type"],
+                reason=f"similar name to {entity['name']!r}",
+                strength="weak",
+            )
+            for row in rows
+            if _normalise_name(row["name"]) == normalised
+        ]
+
+    async def _entity(self, entity_id: str) -> dict | None:
+        async with self._session() as session:
+            result = await session.run(
+                "MATCH (n:Thing {id: $id}) RETURN properties(n) AS p",  # type: ignore[arg-type]
+                id=entity_id,
+            )
+            record = await result.single()
+        return dict(record["p"]) if record else None
 
     async def find_candidates(self) -> list[DuplicateCandidate]:
         """Look for duplicates without recording anything."""
@@ -180,3 +328,60 @@ class IdentityResolver:
                 now=utcnow(),
             )
             return await result.single() is not None
+
+
+# Legal-form suffixes stripped before comparing names. Not exhaustive, and not
+# meant to be: this decides what to *show* an analyst, never what to merge.
+_LEGAL_FORMS = (
+    "as",
+    "asa",
+    "ab",
+    "a/s",
+    "aps",
+    "gmbh",
+    "mbh",
+    "ag",
+    "kg",
+    "ohg",
+    "ug",
+    "ltd",
+    "limited",
+    "plc",
+    "llp",
+    "lp",
+    "llc",
+    "inc",
+    "corp",
+    "co",
+    "bv",
+    "nv",
+    "sa",
+    "sarl",
+    "sas",
+    "srl",
+    "spa",
+    "oy",
+    "ab publ",
+)
+
+
+def _normalise_name(name: str) -> str:
+    """Fold a name to something two spellings of it can agree on.
+
+    Punctuation becomes whitespace, so "A/S" arrives as two tokens; the suffix
+    check therefore tries the last token and the last two joined, which is how
+    "Acme A/S" and "Acme AS" come to agree.
+    """
+    text = re.sub(r"[^\w\s]", " ", (name or "").lower())
+    words = [word for word in text.split() if word]
+
+    changed = True
+    while changed and words:
+        changed = False
+        if len(words) >= 2 and "".join(words[-2:]) in _LEGAL_FORMS:
+            del words[-2:]
+            changed = True
+        elif words[-1] in _LEGAL_FORMS:
+            words.pop()
+            changed = True
+    return " ".join(words)

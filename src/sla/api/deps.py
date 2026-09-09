@@ -7,6 +7,7 @@ from functools import lru_cache
 from sla.config import get_settings
 from sla.graph import driver as graph_driver
 from sla.graph.identity import IdentityResolver
+from sla.graph.merge import MergeService
 from sla.graph.repository import GraphRepository
 from sla.ontology import Ontology, load
 
@@ -25,3 +26,8 @@ def get_repository() -> GraphRepository:
 def get_resolver() -> IdentityResolver:
     settings = get_settings()
     return IdentityResolver(graph_driver.get_driver(), get_ontology(), settings.neo4j_database)
+
+
+def get_merge_service() -> MergeService:
+    settings = get_settings()
+    return MergeService(graph_driver.get_driver(), get_ontology(), settings.neo4j_database)

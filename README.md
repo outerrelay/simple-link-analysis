@@ -214,6 +214,7 @@ accept*, not a second code path. It resolves most-specific-first:
 | Action | Needs | Default |
 |---|---|---|
 | Expand from database | — | auto-commit (the data is already stored) |
+| Check for duplicates | — | reports only; never writes |
 | Look up LEI (GLEIF) | — | review |
 | Companies House: company details | `COMPANIES_HOUSE_API_KEY` | review |
 | Companies House: officers | `COMPANIES_HOUSE_API_KEY` | review |
@@ -249,6 +250,28 @@ register(MyLookup())
 `input_types` resolves through the ontology, so declaring `LegalEntity` offers
 the action on companies and organisations alike.
 
+## Duplicates and merging
+
+Nothing is ever merged automatically. Two operations, deliberately separate:
+
+**"Check for duplicates"** on any node asks whether the same thing is already
+in the database. Matches come back strongest first, each with the reason — a
+shared issued identifier, the same registration number, a similar name after
+legal-form suffixes are stripped so that *Acme AS* and *ACME A/S* meet. The
+reason is shown because a bare similarity score tells you nothing you can
+check. Anything arriving from a registry is checked automatically once
+accepted; candidates go to the review queue.
+
+**Merge** combines two records of the same type, and only when you say so:
+
+- You choose which record survives, and can swap the direction.
+- Conflicting properties keep the survivor's values by default, or you can
+  choose field by field. Whichever name loses is kept as an alias.
+- Relationships move across; duplicates collapse into one edge citing both
+  assertions; an edge between the two is dropped rather than becoming a loop.
+- The absorbed record is **kept and hidden**, not deleted, and every merge can
+  be undone from the merge history.
+
 ## Removing things, in full
 
 | Operation | Effect |
@@ -256,6 +279,7 @@ the action on companies and organisations alike.
 | Remove from chart | Off the canvas; untouched in the database |
 | Delete from database | Tombstoned: gone from every chart and query, and re-importing will not bring it back |
 | Hard delete (`?suppress=false`) | Node, edges and assertions removed outright |
+| Merged away | Hidden and marked `merged_into` the survivor; undoable |
 
 ## Development
 

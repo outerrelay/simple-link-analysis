@@ -1,10 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://outerrelay.github.io/simple-link-analysis/ontology/0.1.0",
+  "$id": "https://outerrelay.github.io/simple-link-analysis/ontology/0.2.0",
   "title": "Simple Link Analysis Ontology",
   "description": "An ontology for corporate and individual due diligence: who owns what, who controls whom, where they are, and which source told us so.",
   "x-generated-by": "Generated from ontology/ontology.yaml by `sla-ontology generate`. Do not edit by hand: edit the ontology and regenerate.",
-  "x-ontology-version": "0.1.0",
+  "x-ontology-version": "0.2.0",
   "$defs": {
     "Address": {
       "type": "object",
@@ -451,7 +451,7 @@
     "EmailAddress": {
       "type": "object",
       "title": "Email address",
-      "description": "An email address.",
+      "description": "An email address, canonical on its lowercased form so that a shared mailbox links the people who use it.",
       "properties": {
         "type": {
           "const": "EmailAddress",
@@ -475,6 +475,12 @@
           ],
           "description": "Free-text analyst notes."
         },
+        "address": {
+          "type": "string",
+          "format": "email",
+          "description": "The address, lowercased. Identity.",
+          "x-pii": true
+        },
         "domain": {
           "type": [
             "string",
@@ -485,7 +491,8 @@
       },
       "required": [
         "type",
-        "name"
+        "name",
+        "address"
       ],
       "additionalProperties": false,
       "x-extends": [
@@ -955,7 +962,7 @@
     "PhoneNumber": {
       "type": "object",
       "title": "Phone number",
-      "description": "A telephone number, stored in E.164 form where possible.",
+      "description": "A telephone number. Canonical on its E.164 form, so that two people who both use a number are attached to the same node — which is the only reason to model a phone number as a node at all.",
       "properties": {
         "type": {
           "const": "PhoneNumber",
@@ -978,6 +985,11 @@
             "null"
           ],
           "description": "Free-text analyst notes."
+        },
+        "e164": {
+          "type": "string",
+          "description": "The number in E.164 form, e.g. +4712345678. Identity.",
+          "x-pii": true
         },
         "country": {
           "type": [
@@ -1003,7 +1015,8 @@
       },
       "required": [
         "type",
-        "name"
+        "name",
+        "e164"
       ],
       "additionalProperties": false,
       "x-extends": [
@@ -1491,22 +1504,22 @@
           "description": "Free-text analyst notes."
         },
         "url": {
-          "type": "string",
-          "format": "uri",
-          "description": "Canonical URL."
-        },
-        "domain": {
           "type": [
             "string",
             "null"
           ],
-          "description": "Registered domain."
+          "format": "uri",
+          "description": "Canonical URL."
+        },
+        "domain": {
+          "type": "string",
+          "description": "Registered domain, lowercased and without a leading www. Identity: the ontology treats a Website as a site, not a page."
         }
       },
       "required": [
         "type",
         "name",
-        "url"
+        "domain"
       ],
       "additionalProperties": false,
       "x-extends": [

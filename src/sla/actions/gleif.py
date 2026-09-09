@@ -39,6 +39,7 @@ class GleifLookup:
     output_types = ("Identifier", "Address", "Company")
     default_policy = WritePolicy.REVIEW
     requires: tuple[str, ...] = ()
+    external = True
 
     async def run(self, context: ActionContext) -> Proposal:
         entity = context.entity
