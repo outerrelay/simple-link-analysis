@@ -439,6 +439,16 @@ class Mentions(RelationshipBase):
     quote: str | None = Field(default=None, description='Supporting excerpt.')
 
 
+class OfficerOf(TemporalRelationshipBase):
+    """
+    Holds a statutory office that is not a directorship — company secretary and
+    equivalents. Kept apart from DIRECTOR_OF because the duties and the significance
+    to an investigation differ.
+    """
+    type: Literal["OFFICER_OF"] = "OFFICER_OF"
+    role: str | None = Field(default=None, description='Office held, as stated by the registry.')
+
+
 class Owns(TemporalRelationshipBase):
     """Holds an ownership interest in an asset or entity."""
     type: Literal["OWNS"] = "OWNS"
@@ -501,7 +511,7 @@ class SubjectTo(TemporalRelationshipBase):
 
 AnyEntity = Address | ApiRecord | BankAccount | Company | Document | EmailAddress | Identifier | LegalCase | NewsArticle | Organisation | Person | PhoneNumber | PublicTender | RealEstate | SanctionsListing | Transaction | Vessel | WebPage | Website
 
-AnyRelationship = AssociateOf | Awarded | BeneficialOwnerOf | BidOn | Controls | DirectorOf | EmployedBy | FamilyOf | HasEmail | HasIdentifier | HasPhone | HasWebsite | HoldsAccount | IssuedTender | LocatedAt | MemberOf | Mentions | Owns | ParentOf | PartyTo | ReceivedBy | RegisteredAt | ResidesAt | SameAs | Sent | SubjectTo
+AnyRelationship = AssociateOf | Awarded | BeneficialOwnerOf | BidOn | Controls | DirectorOf | EmployedBy | FamilyOf | HasEmail | HasIdentifier | HasPhone | HasWebsite | HoldsAccount | IssuedTender | LocatedAt | MemberOf | Mentions | OfficerOf | Owns | ParentOf | PartyTo | ReceivedBy | RegisteredAt | ResidesAt | SameAs | Sent | SubjectTo
 
 ENTITY_MODELS: dict[str, type[EntityBase]] = {
     "Address": Address,
@@ -543,6 +553,7 @@ RELATIONSHIP_MODELS: dict[str, type[RelationshipBase]] = {
     "LOCATED_AT": LocatedAt,
     "MEMBER_OF": MemberOf,
     "MENTIONS": Mentions,
+    "OFFICER_OF": OfficerOf,
     "OWNS": Owns,
     "PARENT_OF": ParentOf,
     "PARTY_TO": PartyTo,

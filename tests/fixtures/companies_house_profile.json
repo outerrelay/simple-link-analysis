@@ -1,0 +1,16 @@
+{
+  "company_name": "EXAMPLE HOLDINGS LIMITED",
+  "company_number": "00445790",
+  "company_status": "active",
+  "type": "ltd",
+  "date_of_creation": "1948-06-15",
+  "jurisdiction": "england-wales",
+  "sic_codes": ["64209", "70100"],
+  "registered_office_address": {
+    "address_line_1": "1 Example Street",
+    "address_line_2": "Floor 4",
+    "locality": "London",
+    "postal_code": "EC1A 1BB",
+    "country": "England"
+  }
+}

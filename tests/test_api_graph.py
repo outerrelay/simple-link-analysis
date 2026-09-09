@@ -76,9 +76,9 @@ def seeded(tmp_path, monkeypatch):
     get_settings.cache_clear()
     settings = Settings(_env_file=None, app_database_url=f"sqlite:///{tmp_path}/app.sqlite")
 
-    from tests.conftest import test_neo4j_settings
+    from tests.conftest import scratch_neo4j_settings
 
-    settings = test_neo4j_settings().model_copy(
+    settings = scratch_neo4j_settings().model_copy(
         update={"app_database_url": f"sqlite:///{tmp_path}/app.sqlite"}
     )
     monkeypatch.setenv("NEO4J_URI", settings.neo4j_uri)

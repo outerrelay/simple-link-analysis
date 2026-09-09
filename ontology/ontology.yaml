@@ -679,6 +679,20 @@ relationship_types:
         type: string
         description: Body that made the appointment.
 
+  OFFICER_OF:
+    label: is an officer of
+    description: >-
+      Holds a statutory office that is not a directorship — company secretary
+      and equivalents. Kept apart from DIRECTOR_OF because the duties and the
+      significance to an investigation differ.
+    source: [Person, LegalEntity]
+    target: [LegalEntity]
+    temporal: true
+    properties:
+      role:
+        type: string
+        description: Office held, as stated by the registry.
+
   EMPLOYED_BY:
     label: is employed by
     description: Works for the entity.

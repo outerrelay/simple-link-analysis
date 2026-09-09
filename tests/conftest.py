@@ -28,7 +28,7 @@ TEST_URI_VAR = "SLA_TEST_NEO4J_URI"
 ALLOW_VAR = "SLA_ALLOW_DESTRUCTIVE_TESTS"
 
 
-def test_neo4j_settings() -> Settings:
+def scratch_neo4j_settings() -> Settings:
     """Where the graph tests should point.
 
     Defaults to the configured database, but ``SLA_TEST_NEO4J_URI`` overrides
@@ -92,7 +92,7 @@ async def neo4j_driver() -> AsyncIterator:
     cannot leak state into one another — which is exactly why a database that
     already holds data is refused rather than cleared.
     """
-    settings = test_neo4j_settings()
+    settings = scratch_neo4j_settings()
     driver = AsyncGraphDatabase.driver(
         settings.neo4j_uri, auth=(settings.neo4j_user, settings.neo4j_password)
     )
@@ -119,9 +119,9 @@ async def neo4j_driver() -> AsyncIterator:
 
 @pytest_asyncio.fixture
 async def repository(neo4j_driver, ontology) -> GraphRepository:
-    return GraphRepository(neo4j_driver, ontology, test_neo4j_settings().neo4j_database)
+    return GraphRepository(neo4j_driver, ontology, scratch_neo4j_settings().neo4j_database)
 
 
 @pytest_asyncio.fixture
 async def resolver(neo4j_driver, ontology) -> IdentityResolver:
-    return IdentityResolver(neo4j_driver, ontology, test_neo4j_settings().neo4j_database)
+    return IdentityResolver(neo4j_driver, ontology, scratch_neo4j_settings().neo4j_database)

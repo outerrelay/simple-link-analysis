@@ -169,7 +169,7 @@ class IdentityResolver:
         async with self._session() as session:
             result = await session.run(
                 """
-                MATCH ()-[r:SAME_AS {id: $id}]-()
+                MATCH ()-[r:SAME_AS {id: $id}]->()
                 SET r.status = $status, r.decided_by = $decided_by,
                     r.decided_at = $now, r.updated_at = $now
                 RETURN r.id AS id

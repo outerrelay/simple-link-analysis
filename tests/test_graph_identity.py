@@ -133,7 +133,7 @@ async def test_confirming_records_who_decided(
 
     async with neo4j_driver.session() as session:
         result = await session.run(
-            "MATCH ()-[r:SAME_AS {id: $id}]-() RETURN r.status AS status, r.decided_by AS by",
+            "MATCH ()-[r:SAME_AS {id: $id}]->() RETURN r.status AS status, r.decided_by AS by",
             id=pending[0]["id"],
         )
         record = await result.single()

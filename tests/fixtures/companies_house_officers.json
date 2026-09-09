@@ -1,0 +1,26 @@
+{
+  "total_results": 3,
+  "items": [
+    {
+      "name": "SMITH, Jane Elizabeth",
+      "officer_role": "director",
+      "appointed_on": "2015-04-01",
+      "nationality": "British",
+      "occupation": "Company Director",
+      "date_of_birth": {"month": 5, "year": 1970},
+      "address": {"locality": "London", "country": "England"}
+    },
+    {
+      "name": "JONES, Robert",
+      "officer_role": "director",
+      "appointed_on": "2011-01-10",
+      "resigned_on": "2019-03-31",
+      "nationality": "British"
+    },
+    {
+      "name": "EXAMPLE SECRETARIES LIMITED",
+      "officer_role": "corporate-secretary",
+      "appointed_on": "2010-06-01"
+    }
+  ]
+}

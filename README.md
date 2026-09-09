@@ -8,8 +8,9 @@ knowledge graph, and explored on a canvas where you can lay out, expand and
 annotate the network. Data arrives from registry APIs, uploaded documents and
 language-model extraction — and nothing enters the database until you accept it.
 
-> **Status: early development.** Milestones M0–M3 are complete: the ontology,
-> the graph store and a working canvas.
+> **Status: early development.** Milestones M0–M4 are complete: the ontology,
+> the graph store, the canvas, and actions with review before anything is
+> written.
 > See [docs/decisions.md](docs/decisions.md) for the design rationale.
 
 ## Design in one minute
@@ -184,6 +185,78 @@ Nothing in the canvas hard-codes an entity type. Add one to `ontology.yaml`,
 drop an SVG in `ontology/icons/`, and it appears with its icon, colour, legend
 entry and menu actions on the next reload.
 
+## Actions
+
+An **action** is something you invoke on a node from the right-click menu:
+expand it from the database, look it up in a registry, later search the news.
+Every one has the same shape — declared input and output types, runs as a
+background job, and returns a *proposal* rather than writing to the graph.
+
+Maltego calls these "transforms". An action is simply what the menu offers.
+
+### Nothing is written until you accept it
+
+Actions never write to Neo4j. They stage a proposal, which the canvas draws in
+dashed amber with a review panel beside it. You accept item by item — accepting
+eight of twelve officers is a normal outcome — and only then does anything
+reach the database. Rejecting writes a tombstone, so the same suggestion is
+never offered twice.
+
+"Auto-commit" is therefore a policy flag meaning *propose and immediately
+accept*, not a second code path. It resolves most-specific-first:
+
+1. **per invocation** — the menu offers "Expand" and "Expand — preview first";
+2. **per action** — each declares its own default;
+3. **global** — `DEFAULT_WRITE_POLICY`, which defaults to `review`.
+
+### Built in
+
+| Action | Needs | Default |
+|---|---|---|
+| Expand from database | — | auto-commit (the data is already stored) |
+| Look up LEI (GLEIF) | — | review |
+| Companies House: company details | `COMPANIES_HOUSE_API_KEY` | review |
+| Companies House: officers | `COMPANIES_HOUSE_API_KEY` | review |
+
+Actions whose credentials are missing still appear in the menu, marked
+unavailable with the reason, rather than silently disappearing.
+
+> **The two registry connectors have not been run against the live APIs.**
+> Outbound access to both is blocked from the development environment, so they
+> are written to the published response formats and tested against fixtures.
+> Expect to correct details on first real use.
+
+### Adding one
+
+Implement the interface, register it, import it in `main.py`:
+
+```python
+class MyLookup:
+    id = "my.lookup"
+    label = "Look up somewhere"
+    description = "What this does."
+    input_types = ("Company",)        # resolved through the ontology
+    output_types = ("Person",)
+    default_policy = WritePolicy.REVIEW
+    requires = ("my_api_key",)        # settings that must be set
+
+    async def run(self, context: ActionContext) -> Proposal:
+        ...
+
+register(MyLookup())
+```
+
+`input_types` resolves through the ontology, so declaring `LegalEntity` offers
+the action on companies and organisations alike.
+
+## Removing things, in full
+
+| Operation | Effect |
+|---|---|
+| Remove from chart | Off the canvas; untouched in the database |
+| Delete from database | Tombstoned: gone from every chart and query, and re-importing will not bring it back |
+| Hard delete (`?suppress=false`) | Node, edges and assertions removed outright |
+
 ## Development
 
 ```bash
@@ -212,8 +285,8 @@ SLA_ALLOW_DESTRUCTIVE_TESTS=1 pytest              # this database is disposable
 | **M1** | Ontology file, validation, code generation | ✅ Done |
 | **M2** | Graph store, assertion layer, temporal queries, `SAME_AS` detection | ✅ Done |
 | **M3** | Canvas: icons, drag, multi-select, layouts over selections | ✅ Done |
-| **M4** | Staging and review, expand actions, first registry connectors | Next |
-| M5 | Language-model actions: online search, registry routing | Deferred |
+| **M4** | Staging and review, expand actions, first registry connectors | ✅ Done |
+| M5 | Language-model actions: online search, registry routing | Next |
 | M6 | Document and spreadsheet ingestion with ontology mapping | Deferred |
 
 M0–M4 form the first usable tool; we reassess before M5.

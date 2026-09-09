@@ -96,6 +96,33 @@ export function buildStylesheet(ontology) {
       selector: '.dimmed',
       style: { opacity: 0.22 },
     },
+    {
+      // Proposed, not yet accepted. Nothing here is in the database, and the
+      // styling has to make that unmistakable at a glance.
+      selector: '.provisional',
+      style: {
+        'border-width': 2,
+        'border-color': '#e8b84b',
+        'border-style': 'dashed',
+        'border-opacity': 1,
+        'background-opacity': 0.45,
+        color: '#e8b84b',
+      },
+    },
+    {
+      selector: 'edge.provisional',
+      style: {
+        'line-style': 'dashed',
+        'line-color': '#e8b84b',
+        'target-arrow-color': '#e8b84b',
+        'line-opacity': 0.9,
+        color: '#e8b84b',
+      },
+    },
+    {
+      selector: '.provisional-focus',
+      style: { 'border-width': 4, 'border-color': '#ffffff', 'border-style': 'solid' },
+    },
   ];
 
   for (const [name, type] of Object.entries(ontology.entity_types)) {

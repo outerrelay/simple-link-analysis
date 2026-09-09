@@ -2423,6 +2423,64 @@
         "Website"
       ]
     },
+    "OFFICER_OF": {
+      "type": "object",
+      "title": "is an officer of",
+      "description": "Holds a statutory office that is not a directorship — company secretary and equivalents. Kept apart from DIRECTOR_OF because the duties and the significance to an investigation differ.",
+      "properties": {
+        "type": {
+          "const": "OFFICER_OF",
+          "description": "Relationship type discriminator."
+        },
+        "source_id": {
+          "type": "string",
+          "description": "UUID of the source entity."
+        },
+        "target_id": {
+          "type": "string",
+          "description": "UUID of the target entity."
+        },
+        "valid_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When this began to hold in the world."
+        },
+        "valid_to": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date",
+          "description": "When it ceased to hold, if it has."
+        },
+        "role": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Office held, as stated by the registry."
+        }
+      },
+      "required": [
+        "type",
+        "source_id",
+        "target_id"
+      ],
+      "additionalProperties": false,
+      "x-directed": true,
+      "x-source-types": [
+        "Company",
+        "Organisation",
+        "Person"
+      ],
+      "x-target-types": [
+        "Company",
+        "Organisation"
+      ]
+    },
     "OWNS": {
       "type": "object",
       "title": "owns",
@@ -3062,6 +3120,9 @@
           },
           {
             "$ref": "#/$defs/MENTIONS"
+          },
+          {
+            "$ref": "#/$defs/OFFICER_OF"
           },
           {
             "$ref": "#/$defs/OWNS"

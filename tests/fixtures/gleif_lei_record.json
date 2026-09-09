@@ -1,0 +1,38 @@
+{
+  "data": [
+    {
+      "type": "lei-records",
+      "id": "213800LBQA1XJIQ7XZ44",
+      "attributes": {
+        "lei": "213800LBQA1XJIQ7XZ44",
+        "entity": {
+          "legalName": {"name": "EXAMPLE HOLDINGS LIMITED", "language": "en"},
+          "legalAddress": {
+            "language": "en",
+            "addressLines": ["1 Example Street", "Floor 4"],
+            "city": "London",
+            "region": "GB-LND",
+            "country": "GB",
+            "postalCode": "EC1A 1BB"
+          },
+          "headquartersAddress": {
+            "addressLines": ["1 Example Street"],
+            "city": "London",
+            "country": "GB",
+            "postalCode": "EC1A 1BB"
+          },
+          "registeredAs": "00445790",
+          "jurisdiction": "GB",
+          "category": "GENERAL",
+          "legalForm": {"id": "H0PO", "other": null},
+          "status": "ACTIVE"
+        },
+        "registration": {
+          "initialRegistrationDate": "2014-03-12T00:00:00Z",
+          "lastUpdateDate": "2025-02-01T00:00:00Z",
+          "status": "ISSUED"
+        }
+      }
+    }
+  ]
+}

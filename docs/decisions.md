@@ -241,3 +241,38 @@ the configured database is disposable.
 
 This was found the hard way: a test run silently deleted the development seed
 data during M3.
+
+
+## 19. Staging is a serialisation boundary, and the repository re-types
+
+Proposals are stored as JSON, which cannot hold a `date`. Entities read from
+Neo4j carry real date objects, so staging writes ISO strings and the repository
+coerces them back on the way in, against the type the ontology declares.
+
+Putting the coercion in the repository rather than in staging means every
+source benefits: registry APIs return JSON too, and their dates would otherwise
+have been stored as text — leaving `valid_from` a string and every temporal
+query quietly wrong. That failure would have surfaced months later, as a query
+returning nothing for no visible reason.
+
+## 20. Fingerprints identify a claim, not a row
+
+A rejection has to survive the next run of the same action. Provisional UUIDs
+are minted fresh each time, so a tombstone keyed on the id would never match
+again. Instead an item is fingerprinted by what it *claims to be*: type plus
+whichever strong identifier it carries, falling back to the name only when
+there is none.
+
+The name is deliberately not mixed in alongside a strong identifier. A company
+renamed between runs is the same company, and re-offering it after it was
+turned down would defeat the point.
+
+Relationship fingerprints resolve their endpoints to entity fingerprints where
+the endpoint is also being proposed, for the same reason.
+
+## 21. Accepting places entities on the chart as well as in the graph
+
+Accepting writes to Neo4j, which says nothing about which chart the analyst is
+looking at. Without an explicit placement the accepted entities were saved and
+then vanished from the canvas — visible only in a browser, not in any unit
+test.

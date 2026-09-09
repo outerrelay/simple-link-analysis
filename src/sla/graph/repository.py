@@ -17,7 +17,7 @@ while :meth:`delete_entity` removes it and its assertions outright.
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 
 from neo4j import AsyncDriver
@@ -69,7 +69,7 @@ class GraphRepository:
         undo an analyst's decision to reject what it produced.
         """
         resolved = self._require_concrete(entity.type)
-        self._validate_properties(entity.type, resolved.properties, entity.properties)
+        properties = self._validate_properties(entity.type, resolved.properties, entity.properties)
 
         labels = ":".join(resolved.labels)
         query = f"""
@@ -91,7 +91,7 @@ class GraphRepository:
                 observed_at=entity.observed_at or utcnow(),
                 ontology_version=self._ontology.version,
                 suppressed=entity.suppressed,
-                properties=entity.properties,
+                properties=properties,
             )
             record = await result.single()
         assert record is not None
@@ -231,8 +231,7 @@ class GraphRepository:
         every relationship answerable for where it came from.
         """
         relationship = self._ontology.relationship_type(predicate)
-        properties = properties or {}
-        self._validate_properties(predicate, relationship.properties, properties)
+        properties = self._validate_properties(predicate, relationship.properties, properties or {})
 
         subject = await self.get_entity(subject_id)
         target = await self.get_entity(object_id)
@@ -493,11 +492,14 @@ class GraphRepository:
 
     def _validate_properties(
         self, owner: str, declared: dict[str, Any], supplied: dict[str, Any]
-    ) -> None:
-        """Reject properties the ontology does not declare, and missing required ones.
+    ) -> dict[str, Any]:
+        """Check properties against the ontology and coerce them to its types.
 
-        Neo4j is schemaless, so without this a typo silently becomes a new
-        property on the node and the mistake is only found much later.
+        Neo4j is schemaless, so without the check a typo silently becomes a new
+        property and the mistake surfaces much later. The coercion matters just
+        as much: dates arrive as ISO strings from staged proposals and from
+        registry APIs, and storing them as text would quietly break every
+        temporal query.
         """
         if unknown := sorted(set(supplied) - set(declared)):
             noun = "property" if len(unknown) == 1 else "properties"
@@ -510,3 +512,41 @@ class GraphRepository:
         )
         if missing:
             raise GraphError(f"{owner} requires {missing}")
+
+        return {
+            name: _coerce(owner, name, declared[name], value) for name, value in supplied.items()
+        }
+
+
+def _coerce(owner: str, name: str, spec: Any, value: Any) -> Any:
+    """Convert a supplied value to the type the ontology declares for it."""
+    if value is None:
+        return None
+    if spec.multi:
+        items = value if isinstance(value, list) else [value]
+        return [_coerce_scalar(owner, name, spec, item) for item in items]
+    return _coerce_scalar(owner, name, spec, value)
+
+
+def _coerce_scalar(owner: str, name: str, spec: Any, value: Any) -> Any:
+    kind = spec.type.value
+    if kind == "date" and isinstance(value, str):
+        return _parse(owner, name, value, date.fromisoformat)
+    if kind == "datetime" and isinstance(value, str):
+        return _parse(owner, name, value, datetime.fromisoformat)
+    if kind == "date" and isinstance(value, datetime):
+        return value.date()
+    if kind == "integer" and isinstance(value, str):
+        return _parse(owner, name, value, int)
+    if kind == "number" and isinstance(value, str):
+        return _parse(owner, name, value, float)
+    if kind == "enum" and spec.enum and value not in spec.enum:
+        raise GraphError(f"{owner}.{name}: {value!r} is not one of {sorted(spec.enum)}")
+    return value
+
+
+def _parse(owner: str, name: str, value: str, parser: Any) -> Any:
+    try:
+        return parser(value)
+    except ValueError as exc:
+        raise GraphError(f"{owner}.{name}: cannot read {value!r} — {exc}") from exc

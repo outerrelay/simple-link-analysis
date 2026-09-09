@@ -66,6 +66,24 @@
         </div>
       </main>
 
+      <aside class="review" id="review" hidden>
+        <button class="close" id="review-close" aria-label="Close">×</button>
+        <h2 id="review-title">Review</h2>
+        <p class="subtitle" id="review-summary"></p>
+        <p class="review-note">
+          None of this is in the database yet. Accept what you want to keep.
+        </p>
+        <label class="review-all">
+          <input type="checkbox" id="review-select-all" checked>
+          Select all <span class="count" id="review-count"></span>
+        </label>
+        <div id="review-items" class="review-items"></div>
+        <div class="review-actions">
+          <button id="review-accept" class="primary">Accept selected</button>
+          <button id="review-reject" class="ghost danger">Reject all</button>
+        </div>
+      </aside>
+
       <aside class="inspector" id="inspector" hidden>
         <button class="close" id="inspector-close" aria-label="Close">×</button>
         <div id="inspector-body"></div>

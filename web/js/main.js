@@ -9,6 +9,7 @@ import { api } from './api.js';
 import { showMenu } from './contextmenu.js';
 import { hideInspector, showEntity, showRelationship } from './inspector.js';
 import { LAYOUTS, runLayout } from './layouts.js';
+import { close as closeReview, initReview, showProposal } from './review.js';
 import { buildStylesheet, toEdge, toNode } from './style.js';
 
 const state = {
@@ -16,6 +17,8 @@ const state = {
   cy: null,
   chartId: null,
   saveTimer: null,
+  actionsByType: new Map(),
+  provisionalIds: new Set(),
 };
 
 const $ = (id) => document.getElementById(id);
@@ -53,6 +56,12 @@ async function start() {
   buildLegend();
   wireCanvasEvents();
   wireChrome();
+  initReview({
+    onDecided: onProposalDecided,
+    onDismiss: clearProvisional,
+    onHighlight: highlightProvisional,
+    onError: (error) => setStatus(`Could not save decision: ${error.message}`, 'error'),
+  });
   await loadCharts();
   setStatus(`Ontology v${state.ontology.version}`);
 }
@@ -126,6 +135,7 @@ function wireCanvasEvents() {
   cy.on('add remove', () => {
     $('canvas-hint').hidden = cy.nodes().length > 0;
     buildLegend();
+    for (const type of new Set(cy.nodes().map((n) => n.data('type')))) loadActionsFor(type);
   });
 }
 
@@ -140,6 +150,11 @@ function openNodeMenu(node, renderedPosition) {
   const outgoing = type ? type.outgoing_relationships : [];
   const selected = state.cy.nodes(':selected');
   const targets = selected.contains(node) && selected.length > 1 ? selected : node;
+  const actions = state.actionsByType.get(node.data('type')) ?? [];
+
+  // Expansion reads the database; the rest reach outside it. Keeping them in
+  // separate sections makes the difference visible before you click.
+  const external = actions.filter((a) => a.id !== 'expand.database');
 
   const sections = [
     {
@@ -160,6 +175,18 @@ function openNodeMenu(node, renderedPosition) {
           onSelect: () =>
             expand(targets.map((n) => n.id()), { depth: 1, includeSources: true }),
         },
+        {
+          label: 'Expand — preview first',
+          detail:
+            'Show what would be added as provisional, and decide before anything ' +
+            'is written.',
+          onSelect: () =>
+            runAction(
+              { id: 'expand.database', label: 'Expand', available: true },
+              node.id(),
+              { policy: 'review' },
+            ),
+        },
       ],
     },
     {
@@ -176,6 +203,15 @@ function openNodeMenu(node, renderedPosition) {
       }),
     },
     {
+      label: external.length ? 'Look up' : null,
+      items: external.map((action) => ({
+        label: action.available ? action.label : `${action.label} — unavailable`,
+        detail: action.available ? action.description : action.unavailable_reason,
+        disabled: !action.available,
+        onSelect: () => runAction(action, node.id()),
+      })),
+    },
+    {
       items: [
         {
           label: 'Select neighbours',
@@ -187,14 +223,235 @@ function openNodeMenu(node, renderedPosition) {
           danger: true,
           onSelect: () => removeFromChart(targets.map((n) => n.id())),
         },
+        {
+          label: `Delete from database${targets.length > 1 ? ` (${targets.length})` : ''}`,
+          detail:
+            'Hides it from every chart and every query. Re-importing will not bring it back.',
+          danger: true,
+          onSelect: () => deleteFromDatabase(targets.map((n) => n.id())),
+        },
       ],
     },
-  ];
+  ].filter((section) => section.items.length);
 
   showMenu(position, sections, {
     title: node.data('label'),
     subtitle: type ? type.label : node.data('type'),
   });
+}
+
+/* --- actions ------------------------------------------------------------ */
+
+/** Fetch and cache which actions apply to a given entity type. */
+async function loadActionsFor(entityType) {
+  if (state.actionsByType.has(entityType)) return;
+  try {
+    state.actionsByType.set(entityType, await api.actionsFor(entityType));
+  } catch {
+    state.actionsByType.set(entityType, []);
+  }
+}
+
+async function runAction(action, entityId, { policy = null } = {}) {
+  try {
+    setStatus(`Running ${action.label}…`);
+    const job = await api.runAction(action.id, {
+      entity_id: entityId,
+      chart_id: state.chartId,
+      policy,
+    });
+    const finished = await pollJob(job.id);
+
+    if (finished.status === 'failed') {
+      setStatus(`${action.label}: ${finished.message}`, 'error');
+      return;
+    }
+    if (!finished.proposal_set_id) {
+      setStatus(finished.message || 'Nothing returned');
+      return;
+    }
+
+    const proposal = await api.proposal(finished.proposal_set_id);
+    const undecided = proposal.items.filter((item) => item.decision === 'pending');
+
+    if (undecided.length === 0) {
+      // Either it auto-committed, or everything was already decided before.
+      await reloadChartGraph();
+      setStatus(finished.message || 'Done');
+      return;
+    }
+
+    showProvisional(proposal);
+    showProposal(proposal);
+    setStatus(`${action.label}: ${undecided.length} to review`, 'warn');
+  } catch (error) {
+    setStatus(`${action.label} failed: ${error.message}`, 'error');
+  }
+}
+
+/** Poll until the job stops running. */
+async function pollJob(jobId, { interval = 500, timeout = 120000 } = {}) {
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    const job = await api.job(jobId);
+    if (job.status !== 'running') return job;
+    if (Date.now() > deadline) {
+      return { ...job, status: 'failed', message: 'timed out waiting for the action' };
+    }
+    await new Promise((resolve) => setTimeout(resolve, interval));
+  }
+}
+
+/** Draw a proposal on the canvas as provisional, so it can be judged in place. */
+function showProvisional(proposal) {
+  clearProvisional();
+  const cy = state.cy;
+  const idFor = new Map();
+
+  cy.batch(() => {
+    for (const item of proposal.items) {
+      if (item.kind !== 'entity' || item.decision !== 'pending') continue;
+      const payload = item.payload;
+      const targetId = payload.existing_id || payload.id;
+      idFor.set(payload.id, targetId);
+      if (cy.getElementById(targetId).nonempty()) continue;
+
+      cy.add(
+        toNode(
+          {
+            id: targetId,
+            type: payload.type,
+            label: payload.properties?.name ?? payload.type,
+            properties: payload.properties ?? {},
+          },
+          state.ontology,
+        ),
+      );
+      cy.getElementById(targetId).addClass('provisional').scratch('itemId', item.id);
+      state.provisionalIds.add(targetId);
+    }
+
+    for (const item of proposal.items) {
+      if (item.kind !== 'relationship' || item.decision !== 'pending') continue;
+      const payload = item.payload;
+      const source = idFor.get(payload.source_id) ?? payload.source_id;
+      const target = idFor.get(payload.target_id) ?? payload.target_id;
+      if (cy.getElementById(source).empty() || cy.getElementById(target).empty()) continue;
+
+      const edgeId = `provisional:${item.id}`;
+      if (cy.getElementById(edgeId).nonempty()) continue;
+      cy.add(
+        toEdge(
+          {
+            id: edgeId,
+            type: payload.type,
+            source_id: source,
+            target_id: target,
+            directed: true,
+            properties: payload.properties ?? {},
+            valid_from: payload.valid_from,
+            valid_to: payload.valid_to,
+            assertion_count: 0,
+          },
+          state.ontology,
+        ),
+      );
+      cy.getElementById(edgeId).addClass('provisional').scratch('itemId', item.id);
+      state.provisionalIds.add(edgeId);
+    }
+  });
+
+  layoutNewcomers();
+  // Judging a proposal means seeing it, so bring it into view.
+  setTimeout(() => cy.fit(undefined, 60), 450);
+}
+
+/** Take provisional elements off the canvas without touching anything real. */
+function clearProvisional() {
+  const cy = state.cy;
+  if (!cy) return;
+  cy.batch(() => {
+    for (const id of state.provisionalIds) cy.getElementById(id).remove();
+  });
+  state.provisionalIds.clear();
+}
+
+function highlightProvisional(item) {
+  const cy = state.cy;
+  cy.elements('.provisional-focus').removeClass('provisional-focus');
+  if (!item) return;
+  cy.elements('.provisional')
+    .filter((element) => element.scratch('itemId') === item.id)
+    .addClass('provisional-focus');
+}
+
+async function onProposalDecided(result, counts) {
+  // Accepting writes to the graph but says nothing about which chart the
+  // analyst is looking at, so the accepted entities have to be placed here or
+  // they would be saved and then vanish from the canvas.
+  const accepted = result.items
+    .filter((item) => item.kind === 'entity' && item.decision === 'accepted')
+    .map((item) => item.payload.existing_id || item.payload.id);
+
+  const positions = new Map(
+    state.cy.nodes().map((n) => [n.id(), { x: n.position('x'), y: n.position('y') }]),
+  );
+  clearProvisional();
+
+  if (state.chartId && accepted.length) {
+    try {
+      await api.addNodes(
+        state.chartId,
+        accepted.map((id) => ({
+          entity_id: id,
+          x: positions.get(id)?.x ?? 0,
+          y: positions.get(id)?.y ?? 0,
+        })),
+      );
+    } catch (error) {
+      setStatus(`Saved to the database, but not to this chart: ${error.message}`, 'error');
+    }
+  }
+
+  await reloadChartGraph();
+  const parts = [];
+  if (counts.accepted) parts.push(`${counts.accepted} accepted`);
+  if (counts.rejected) parts.push(`${counts.rejected} rejected — will not be offered again`);
+  setStatus(parts.join(', ') || 'Nothing changed');
+}
+
+async function deleteFromDatabase(entityIds) {
+  const confirmed = confirm(
+    `Delete ${entityIds.length} entit${entityIds.length === 1 ? 'y' : 'ies'} from the ` +
+      `database?\n\nThey will disappear from every chart and every query, and ` +
+      `re-importing the same source will not bring them back.`,
+  );
+  if (!confirmed) return;
+
+  try {
+    for (const id of entityIds) await api.deleteFromGraph(id, { suppress: true });
+    state.cy.remove(state.cy.collection(entityIds.map((id) => state.cy.getElementById(id))));
+    hideInspector();
+    if (state.chartId) await api.removeNodes(state.chartId, entityIds);
+    setStatus(`Deleted ${entityIds.length} from the database`);
+  } catch (error) {
+    setStatus(`Delete failed: ${error.message}`, 'error');
+  }
+}
+
+/** Re-read the chart from the server, so the canvas reflects what was written. */
+async function reloadChartGraph() {
+  if (!state.chartId) return;
+  const positions = Object.fromEntries(
+    state.cy.nodes().map((n) => [n.id(), { x: n.position('x'), y: n.position('y') }]),
+  );
+  const chart = await api.getChart(state.chartId);
+  state.cy.elements().remove();
+  state.provisionalIds.clear();
+  mergeIntoCanvas(chart.graph, { ...positions, ...Object.fromEntries(
+    chart.placements.map((p) => [p.entity_id, { x: p.x, y: p.y }]),
+  ) });
+  state.cy.nodes().forEach((n) => n.scratch('placed', true));
 }
 
 /* --- graph operations --------------------------------------------------- */
@@ -311,7 +568,7 @@ async function openChart(chartId) {
 }
 
 function placements() {
-  return state.cy.nodes().map((node) => ({
+  return state.cy.nodes(':not(.provisional)').map((node) => ({
     entity_id: node.id(),
     x: node.position('x'),
     y: node.position('y'),

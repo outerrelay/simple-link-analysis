@@ -63,6 +63,29 @@ export const api = {
       body: JSON.stringify(placements),
     }),
 
+  actionsFor: (entityType) => request(`/api/actions/for/${entityType}`),
+
+  runAction: (actionId, body) =>
+    request(`/api/actions/${actionId}/run`, { method: 'POST', body: JSON.stringify(body) }),
+
+  job: (jobId) => request(`/api/actions/jobs/${jobId}`),
+
+  proposal: (setId) => request(`/api/actions/proposals/${setId}`),
+
+  pendingProposals: () => request('/api/actions/proposals'),
+
+  decideProposal: (setId, accepted, rejected) =>
+    request(`/api/actions/proposals/${setId}/decide`, {
+      method: 'POST',
+      body: JSON.stringify({ accepted, rejected }),
+    }),
+
+  rejectProposal: (setId) =>
+    request(`/api/actions/proposals/${setId}/reject`, { method: 'POST' }),
+
+  deleteFromGraph: (entityId, { suppress = true } = {}) =>
+    request(`/api/actions/entity/${entityId}?suppress=${suppress}`, { method: 'DELETE' }),
+
   removeNodes: (chartId, entityIds) =>
     request(`/api/charts/${chartId}/nodes/remove`, {
       method: 'POST',

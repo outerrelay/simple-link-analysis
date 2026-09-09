@@ -16,7 +16,8 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from sla import __version__
-from sla.api import charts, graph, health, ontology
+from sla.actions import companies_house, expand, gleif  # noqa: F401  (registers them)
+from sla.api import actions, charts, graph, health, ontology
 from sla.app import database as app_database
 from sla.config import get_settings
 from sla.graph import driver as graph_driver
@@ -61,6 +62,7 @@ app.include_router(health.router)
 app.include_router(ontology.router)
 app.include_router(graph.router)
 app.include_router(charts.router)
+app.include_router(actions.router)
 
 # The canvas is plain ES modules with no build step, so the files are served
 # as they are. Icons come straight from the ontology directory, which keeps
