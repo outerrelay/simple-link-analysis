@@ -9,8 +9,11 @@ services:
       - "7474:7474"   # HTTP browser
       - "7687:7687"   # Bolt
     environment:
-      # Must match NEO4J_USER / NEO4J_PASSWORD in your .env
-      NEO4J_AUTH: neo4j/please-change-me
+      # Read from .env, so the password is set in exactly one place. Compose
+      # substitutes these before starting the container; the ":?" form fails
+      # loudly with this message rather than starting a database whose password
+      # does not match what the app will use.
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:?set NEO4J_PASSWORD in .env — copy .env.example first}
       NEO4J_server_memory_heap_max__size: 1G
     volumes:
       - neo4j-data:/data
