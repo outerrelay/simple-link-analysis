@@ -26,8 +26,18 @@ export function buildStylesheet(ontology) {
         'font-family': 'system-ui, sans-serif',
         'text-valign': 'bottom',
         'text-margin-y': 5,
-        'text-max-width': 96,
-        'text-wrap': 'ellipsis',
+        // Narrower than it might be: a wide label collides with its
+        // neighbours side to side, which is harder to read past than the same
+        // text wrapped onto another line. This governs the wrap width only —
+        // how much of the name is shown is MAX_LABEL below.
+        'text-max-width': 128,
+        // Wrap on spaces rather than cutting the name off. Breaks are
+        // restricted to whitespace: "anywhere" splits words mid-syllable even
+        // when a space was available, turning Oslo into "Osl / o". A token
+        // with no space in it — an LEI, say — is left to run wide, which
+        // reads better than breaking it in an arbitrary place.
+        'text-wrap': 'wrap',
+        'text-overflow-wrap': 'whitespace',
         'text-outline-color': '#0f1216',
         'text-outline-width': 2.5,
         'border-width': 0,
@@ -145,6 +155,25 @@ export function buildStylesheet(ontology) {
   return style;
 }
 
+/** Longest label drawn in full before it is shortened.
+
+   Generous enough for the names this ontology actually holds — the longest in
+   the sample data is 51 characters — while stopping a pathological name from
+   becoming a wall of text under the node. */
+const MAX_LABEL = 64;
+
+/** Shorten a label at a word boundary, so wrapping has whole words to work with. */
+export function displayLabel(text) {
+  const label = String(text ?? '');
+  if (label.length <= MAX_LABEL) return label;
+
+  const cut = label.slice(0, MAX_LABEL);
+  const lastSpace = cut.lastIndexOf(' ');
+  // Only break at a space if one falls reasonably late; otherwise the name is
+  // one long token and cutting mid-word is the honest option.
+  return `${lastSpace > MAX_LABEL * 0.6 ? cut.slice(0, lastSpace) : cut.trimEnd()}…`;
+}
+
 /** Cytoscape element for one entity. */
 export function toNode(entity, ontology, position) {
   const isSource = (ontology.source_types || []).includes(entity.type);
@@ -152,7 +181,7 @@ export function toNode(entity, ontology, position) {
     group: 'nodes',
     data: {
       id: entity.id,
-      label: entity.label,
+      label: displayLabel(entity.label),
       type: entity.type,
       isSource: isSource ? 1 : 0,
       properties: entity.properties,

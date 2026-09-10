@@ -713,8 +713,8 @@ function layoutNewcomers() {
     animationDuration: 400,
     fit: false,
     randomize: false,
-    nodeRepulsion: 20000,
-    idealEdgeLength: 145,
+    nodeRepulsion: 26000,
+    idealEdgeLength: 170,
   });
   layout.run();
   unplaced.forEach((n) => n.scratch('placed', true));

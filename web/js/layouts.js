@@ -21,8 +21,8 @@ const BASE_OPTIONS = {
   cose: {
     animate: true,
     animationDuration: 420,
-    nodeRepulsion: 20000,
-    idealEdgeLength: 145,
+    nodeRepulsion: 26000,
+    idealEdgeLength: 170,
     nodeOverlap: 26,
     gravity: 0.4,
     randomize: false,

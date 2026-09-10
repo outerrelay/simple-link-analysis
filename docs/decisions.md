@@ -390,3 +390,21 @@ not about what a person experiences. Where an interaction depends on timing or
 on native browser behaviour, the test has to model that specifically — the
 regression test for the first bug holds the mouse down for 500 ms, and fails
 without the fix.
+
+
+## 29. Labels wrap on spaces rather than being cut short
+
+Node labels were truncated with an ellipsis at 96 pixels, which hid most of a
+name like "Entwicklungsgesellschaft Heussallee Verwaltung GmbH". They now wrap.
+
+Breaks are restricted to whitespace. Cytoscape's `anywhere` setting splits
+words mid-syllable even when a space was available — "Oslo" became "Osl / o",
+"framework" became "fra / mework" — so a token with no space in it, such as an
+LEI, is instead left to run wide, which reads better than breaking it
+arbitrarily.
+
+The wrap width is narrower than it might be, because a wide label collides
+with its neighbours side to side and that is harder to read past than the same
+text on another line. How much of the name is shown is a separate limit: 64
+characters, cut at a word boundary, which covers every name in the sample data
+and stops a pathological one becoming a wall of text.
