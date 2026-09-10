@@ -37,20 +37,31 @@ language-model extraction — and nothing enters the database until you accept i
 
 ## Getting started
 
+Requires **Python 3.11+** and **Docker** (for Neo4j).
+
 ```bash
-git clone https://github.com/outerrelay/simple-link-analysis
+# The work is on a feature branch; main is still empty.
+git clone -b claude/browser-network-analysis-tool-mt1vxh \
+    https://github.com/outerrelay/simple-link-analysis
 cd simple-link-analysis
 
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements-dev.txt
 pip install -e .
 
-cp .env.example .env          # then edit NEO4J_PASSWORD
-docker compose up -d          # starts Neo4j on 7687 (Bolt) and 7474 (browser)
-
+cp .env.example .env               # then set NEO4J_PASSWORD
+docker compose up -d               # Neo4j on 7687 (Bolt), 7474 (browser)
+python -m sla.seed --reset         # optional: a small worked example
 uvicorn sla.main:app --reload
 ```
+
+Open <http://localhost:8000>.
+
+`docker-compose.yml` reads the password from `.env`, so it is set in one place.
+Set it **before the first `docker compose up`**: Neo4j stores the password when
+the volume is first created, and changing it afterwards needs
+`docker compose down -v` to discard the volume.
 
 Check that the app can reach the database:
 
@@ -67,7 +78,18 @@ curl -s localhost:8000/health
 ```
 
 A `status` of `degraded` means the app is running but Neo4j is not reachable;
-the `neo4j.error` field says why.
+the `neo4j.error` field says why. The app starts either way, so the page and
+the ontology are served even when the database is down.
+
+### If something is wrong
+
+| Symptom | Cause |
+|---|---|
+| `required variable NEO4J_PASSWORD is missing` from compose | No `.env` yet — copy `.env.example` |
+| `degraded`, connection refused | Neo4j not up yet; it takes a few seconds. `docker compose ps` |
+| `degraded`, authentication failure | `.env` password changed after the volume was created. `docker compose down -v`, then up again |
+| `constraint that cannot be created` on startup | The database predates the current ontology. Run the matching script in `migrations/` |
+| Port 7687 or 8000 already in use | Something else is on it; stop it, or pass `--port` to uvicorn |
 
 ## Working with the ontology
 
