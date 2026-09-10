@@ -39,14 +39,16 @@ language-model extraction — and nothing enters the database until you accept i
 
 Requires **Python 3.11 or later** and **Docker** (for Neo4j).
 
+The work is on a feature branch; `main` is still empty, so the `-b` is needed.
+
+**macOS / Linux**
+
 ```bash
-# The work is on a feature branch; main is still empty.
-git clone -b claude/browser-network-analysis-tool-mt1vxh \
-    https://github.com/outerrelay/simple-link-analysis
+git clone -b claude/browser-network-analysis-tool-mt1vxh https://github.com/outerrelay/simple-link-analysis
 cd simple-link-analysis
 
 python3 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements-dev.txt
 pip install -e .
 
@@ -55,6 +57,28 @@ docker compose up -d               # Neo4j on 7687 (Bolt), 7474 (browser)
 python -m sla.seed --reset         # optional: a small worked example
 uvicorn sla.main:app --reload
 ```
+
+**Windows (Command Prompt)**
+
+```bat
+git clone -b claude/browser-network-analysis-tool-mt1vxh https://github.com/outerrelay/simple-link-analysis
+cd simple-link-analysis
+
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements-dev.txt
+pip install -e .
+
+copy .env.example .env
+notepad .env                       :: set NEO4J_PASSWORD, then save and close
+docker compose up -d
+python -m sla.seed --reset
+uvicorn sla.main:app --reload
+```
+
+**Windows (PowerShell)** is the same, except activation is
+`.venv\Scripts\Activate.ps1`. If that is blocked, run
+`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once.
 
 Open <http://localhost:8000>.
 
@@ -91,6 +115,8 @@ the ontology are served even when the database is down.
 | `constraint that cannot be created` on startup | The database predates the current ontology. Run the matching script in `migrations/` |
 | Port 7687 or 8000 already in use | Something else is on it; stop it, or pass `--port` to uvicorn |
 | `Failed to build PyYAML pydantic-core` during install | pip found no wheel for your Python and tried to compile from source. Upgrade pip (`pip install --upgrade pip`) and reinstall; if it persists, your Python is newer than any released wheel and you need an older interpreter |
+| `cp` / `source` not recognised (Windows) | Those are Unix commands. Use the Windows block above: `copy` and `.venv\Scripts\activate` |
+| `python3` not recognised (Windows) | Windows installs it as `python`. `py -3.12 -m venv .venv` picks a specific version if you have several |
 
 Dependencies are held to version *ranges* rather than exact pins, so pip can
 pick a release with wheels for whichever Python you have. An exact pin only
@@ -347,6 +373,10 @@ database already holds data they skip rather than wipe it. To run them:
 SLA_TEST_NEO4J_URI=bolt://localhost:7688 pytest   # a scratch instance
 SLA_ALLOW_DESTRUCTIVE_TESTS=1 pytest              # this database is disposable
 ```
+
+On Windows the variable is set separately — `set SLA_ALLOW_DESTRUCTIVE_TESTS=1`
+in Command Prompt, or `$env:SLA_ALLOW_DESTRUCTIVE_TESTS=1` in PowerShell — and
+then `pytest` on the next line.
 
 ## Roadmap
 
