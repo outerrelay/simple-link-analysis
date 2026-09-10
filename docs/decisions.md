@@ -408,3 +408,25 @@ with its neighbours side to side and that is harder to read past than the same
 text on another line. How much of the name is shown is a separate limit: 64
 characters, cut at a word boundary, which covers every name in the sample data
 and stops a pathological one becoming a wall of text.
+
+
+## 30. Dragging the background has a mode, with escape hatches
+
+Dragging the canvas can either move the view or draw a selection box, and both
+are wanted. Cytoscape's default binds selection to shift-drag, which worked but
+was invisible: the feature was reported missing by someone who had it.
+
+So the drag has a mode, shown in the toolbar and in the cursor, with a way
+round it in both directions so neither behaviour is ever more than a modifier
+away:
+
+* **shift-drag always selects**, even in pan mode;
+* **holding space always pans**, even in select mode;
+* `V` and `H` switch mode, as in most design tools.
+
+Select is the default. A box selection is the thing that cannot be achieved by
+any other means, while the view can also be moved by holding space, switching
+mode, or scrolling to zoom.
+
+Keyboard shortcuts are ignored while a text field has focus, so typing a name
+containing "v" or "h" into the search box does not change the mode underneath.

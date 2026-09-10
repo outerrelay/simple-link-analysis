@@ -259,7 +259,9 @@ canvas, and right-click it to expand.
   runnable over the whole chart or **only the current selection**. A selection
   layout tidies the selected nodes within the space they already occupy rather
   than rearranging the chart around them.
-- **Selection** — click, shift-click, or drag a box.
+- **Selection** — click, shift-click, or drag a box. The toolbar switches what
+  dragging the background does; `V` selects, `H` pans. Either way the other is
+  a modifier away: shift-drag always selects, holding space always pans.
 - **Right-click** — expand one or two hops, expand by a specific relationship
   type, reveal sources, or remove from the chart. The relationship types
   offered come from the ontology, so a Person is never offered "issued tender".

@@ -58,6 +58,12 @@
           Search for an entity above to put it on the canvas.
         </div>
         <div class="canvas-tools">
+          <div class="mode-switch" role="group" aria-label="Drag behaviour">
+            <button id="mode-select" class="mode" data-mode="select"
+                    title="Drag to select (V). Hold space to pan.">Select</button>
+            <button id="mode-pan" class="mode" data-mode="pan"
+                    title="Drag to move the canvas (H). Shift-drag still selects.">Pan</button>
+          </div>
           <button id="fit" class="ghost" title="Fit to view">Fit</button>
           <button id="remove-selected" class="ghost danger"
                   title="Take the selected nodes off this chart. They stay in the database.">

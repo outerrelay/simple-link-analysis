@@ -22,6 +22,8 @@ const state = {
   actionsByType: new Map(),
   provisionalIds: new Set(),
   selectionOrder: [],
+  canvasMode: 'select',
+  spaceHeld: false,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -58,6 +60,7 @@ async function start() {
   // console, and how the automated interface checks drive the canvas.
   window.sla = state;
 
+  wireCanvasMode();
   buildLayoutButtons();
   buildLegend();
   wireCanvasEvents();
@@ -525,6 +528,88 @@ async function reloadChartGraph() {
     chart.placements.map((p) => [p.entity_id, { x: p.x, y: p.y }]),
   ) });
   state.cy.nodes().forEach((n) => n.scratch('placed', true));
+}
+
+/* --- pan and select ------------------------------------------------------
+ *
+ * Dragging the background can either move the canvas or draw a selection box,
+ * and both are wanted. Rather than make one of them unreachable, the drag has
+ * a mode — shown in the toolbar and in the cursor — with escape hatches so
+ * neither ever needs the mode switched:
+ *
+ *   · shift-drag always selects, even in pan mode
+ *   · holding space always pans, even in select mode
+ *
+ * Select is the default, because a box selection is the thing you cannot
+ * accomplish any other way, while the canvas can also be moved by holding
+ * space or switching mode.
+ */
+
+function setCanvasMode(mode) {
+  state.canvasMode = mode;
+  applyCanvasMode();
+  for (const button of document.querySelectorAll('.mode-switch button')) {
+    button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
+  }
+}
+
+/** Push the current mode onto Cytoscape and the cursor. */
+function applyCanvasMode() {
+  const panning = state.canvasMode === 'pan' || state.spaceHeld;
+  state.cy.userPanningEnabled(panning);
+  // Box selection stays enabled while panning so that shift-drag still works.
+  state.cy.boxSelectionEnabled(true);
+
+  const canvas = $('cy');
+  canvas.classList.toggle('mode-select', state.canvasMode === 'select');
+  canvas.classList.toggle('mode-pan', state.canvasMode === 'pan');
+  canvas.classList.toggle('panning-temporarily', state.spaceHeld);
+}
+
+function wireCanvasMode() {
+  for (const button of document.querySelectorAll('.mode-switch button')) {
+    button.addEventListener('click', () => setCanvasMode(button.dataset.mode));
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if (isTyping(event.target)) return;
+
+    if (event.code === 'Space' && !state.spaceHeld) {
+      // Hold space to pan without leaving select mode — and stop the page
+      // scrolling while it is held.
+      event.preventDefault();
+      state.spaceHeld = true;
+      applyCanvasMode();
+      return;
+    }
+    if (event.key === 'v' || event.key === 'V') setCanvasMode('select');
+    if (event.key === 'h' || event.key === 'H') setCanvasMode('pan');
+  });
+
+  document.addEventListener('keyup', (event) => {
+    if (event.code === 'Space') {
+      state.spaceHeld = false;
+      applyCanvasMode();
+    }
+  });
+
+  // Releasing space over another window would otherwise leave it stuck down.
+  window.addEventListener('blur', () => {
+    state.spaceHeld = false;
+    applyCanvasMode();
+  });
+
+  setCanvasMode('select');
+}
+
+/** True when the keystroke belongs to a field the analyst is typing in. */
+function isTyping(target) {
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target?.isContentEditable
+  );
 }
 
 /** Selected nodes, in the order they were clicked. */

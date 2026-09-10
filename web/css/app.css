@@ -378,3 +378,29 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .create-fields { max-height: 46vh; overflow-y: auto; margin: 16px 0 6px; padding-right: 4px; }
 .create-note { color: var(--text-dim); font-size: 12px; margin: 4px 0 0; }
 .swap-direction { margin-bottom: 4px; align-self: flex-start; }
+
+
+/* --- pan / select mode -------------------------------------------------- */
+
+.mode-switch {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-raised);
+}
+.mode-switch button {
+  border: 0; border-radius: 0; background: transparent;
+  padding: 6px 12px; color: var(--text-dim);
+}
+.mode-switch button + button { border-left: 1px solid var(--border); }
+.mode-switch button:hover { background: var(--bg-input); }
+.mode-switch button[aria-pressed="true"] {
+  background: #2c4a63; color: #dcecf9;
+}
+
+/* The cursor is the fastest way to know which mode you are in. */
+.canvas.mode-select { cursor: crosshair; }
+.canvas.mode-pan { cursor: grab; }
+.canvas.mode-pan:active { cursor: grabbing; }
+.canvas.panning-temporarily { cursor: grabbing; }
