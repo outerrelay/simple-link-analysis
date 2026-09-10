@@ -350,3 +350,31 @@ button.primary:hover:not(:disabled) { background: #355875; }
 
 .match-strong { color: #7fb069; }
 .match-weak { color: var(--text-faint); }
+
+
+/* --- property forms ----------------------------------------------------- */
+
+.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.field-label { font-size: 12px; color: var(--text-dim); }
+.field-label .required { color: #e8b84b; font-size: 10px; }
+.field-label .pii-mark {
+  font-size: 10px; color: #e8b84b;
+  border: 1px solid #4a4123; border-radius: 3px; padding: 0 3px; margin-left: 4px;
+}
+.field-hint { font-size: 11px; color: var(--text-faint); }
+.field input[type="checkbox"] { align-self: flex-start; }
+
+textarea {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 6px 9px;
+  font: inherit;
+  resize: vertical;
+}
+textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.create-fields { max-height: 46vh; overflow-y: auto; margin: 16px 0 6px; padding-right: 4px; }
+.create-note { color: var(--text-dim); font-size: 12px; margin: 4px 0 0; }
+.swap-direction { margin-bottom: 4px; align-self: flex-start; }

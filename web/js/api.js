@@ -86,6 +86,15 @@ export const api = {
   deleteFromGraph: (entityId, { suppress = true } = {}) =>
     request(`/api/actions/entity/${entityId}?suppress=${suppress}`, { method: 'DELETE' }),
 
+  createEntity: (type, properties) =>
+    request('/api/graph/entity', {
+      method: 'POST',
+      body: JSON.stringify({ type, properties }),
+    }),
+
+  createRelationship: (body) =>
+    request('/api/graph/relationship', { method: 'POST', body: JSON.stringify(body) }),
+
   matchesFor: (entityId) => request(`/api/merges/matches/${entityId}`),
 
   mergePreview: (survivorId, absorbedId) =>

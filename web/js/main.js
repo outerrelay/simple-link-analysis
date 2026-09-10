@@ -7,6 +7,7 @@
 
 import { api } from './api.js';
 import { showMenu } from './contextmenu.js';
+import { initCreate, openNewEntity, openNewRelationship } from './create.js';
 import { hideInspector, showEntity, showRelationship } from './inspector.js';
 import { LAYOUTS, runLayout } from './layouts.js';
 import { initMerge, openMerge } from './merge.js';
@@ -20,6 +21,7 @@ const state = {
   saveTimer: null,
   actionsByType: new Map(),
   provisionalIds: new Set(),
+  selectionOrder: [],
 };
 
 const $ = (id) => document.getElementById(id);
@@ -60,6 +62,11 @@ async function start() {
   buildLegend();
   wireCanvasEvents();
   wireChrome();
+  initCreate(state.ontology, {
+    onEntityCreated: onEntityCreated,
+    onRelationshipCreated: onRelationshipCreated,
+    onError: (error) => setStatus(error.message, 'error'),
+  });
   initMerge({
     onMerged: onMerged,
     onError: (error) => setStatus(`Merge failed: ${error.message}`, 'error'),
@@ -128,8 +135,20 @@ function buildLegend() {
 function wireCanvasEvents() {
   const cy = state.cy;
 
-  cy.on('select unselect', 'node', () => {
+  // Cytoscape's :selected collection has no notion of the order things were
+  // clicked, but "connect these two" needs a direction, and the obvious one is
+  // first-selected to second-selected. So the order is tracked here.
+  cy.on('select', 'node', (event) => {
+    const id = event.target.id();
+    if (!state.selectionOrder.includes(id)) state.selectionOrder.push(id);
     $('selection-count').textContent = `(${cy.nodes(':selected').length})`;
+  });
+  cy.on('unselect', 'node', (event) => {
+    state.selectionOrder = state.selectionOrder.filter((id) => id !== event.target.id());
+    $('selection-count').textContent = `(${cy.nodes(':selected').length})`;
+  });
+  cy.on('remove', 'node', (event) => {
+    state.selectionOrder = state.selectionOrder.filter((id) => id !== event.target.id());
   });
 
   cy.on('tap', 'node', (event) => showEntity(event.target, state.ontology));
@@ -140,6 +159,9 @@ function wireCanvasEvents() {
 
   cy.on('dragfree', 'node', persistPositions);
   cy.on('cxttap', 'node', (event) => openNodeMenu(event.target, event.renderedPosition));
+  cy.on('cxttap', (event) => {
+    if (event.target === cy) openCanvasMenu(event.renderedPosition, event.position);
+  });
   cy.on('add remove', () => {
     $('canvas-hint').hidden = cy.nodes().length > 0;
     buildLegend();
@@ -231,6 +253,18 @@ function openNodeMenu(node, renderedPosition) {
         },
         ...(selected.length === 2 && selected.contains(node)
           ? [
+              {
+                label: 'Connect these two…',
+                detail: 'Draw a relationship between them, from the first selected.',
+                onSelect: () => {
+                  const [a, b] = selectedInOrder().map((n) => ({
+                    id: n.id(),
+                    type: n.data('type'),
+                    label: n.data('label'),
+                  }));
+                  openNewRelationship(a, b);
+                },
+              },
               {
                 label: 'Merge these two…',
                 detail:
@@ -486,6 +520,70 @@ async function reloadChartGraph() {
     chart.placements.map((p) => [p.entity_id, { x: p.x, y: p.y }]),
   ) });
   state.cy.nodes().forEach((n) => n.scratch('placed', true));
+}
+
+/** Selected nodes, in the order they were clicked. */
+function selectedInOrder() {
+  const selected = state.cy.nodes(':selected');
+  const ordered = state.selectionOrder
+    .map((id) => state.cy.getElementById(id))
+    .filter((node) => node.nonempty() && node.selected());
+  // Anything selected by other means — a box drag, "select neighbours" — has
+  // no recorded order, so it goes on the end.
+  const seen = new Set(ordered.map((node) => node.id()));
+  return [...ordered, ...selected.filter((node) => !seen.has(node.id()))];
+}
+
+/** The menu for empty canvas: what you can do without a node under the cursor. */
+function openCanvasMenu(renderedPosition, graphPosition) {
+  const container = $('cy').getBoundingClientRect();
+  showMenu(
+    {
+      x: container.left + renderedPosition.x,
+      y: container.top + renderedPosition.y,
+    },
+    [
+      {
+        items: [
+          {
+            label: 'Add an entity here…',
+            detail: 'Create a new record and place it at this point.',
+            onSelect: () => openNewEntity(graphPosition),
+          },
+        ],
+      },
+    ],
+  );
+}
+
+/** Place a newly created entity where the analyst asked for it. */
+async function onEntityCreated(result, position) {
+  const entity = result.entity;
+  mergeIntoCanvas({ entities: [entity], relationships: [] }, { [entity.id]: position });
+  const node = state.cy.getElementById(entity.id);
+  node.scratch('placed', true);
+  if (position) node.position(position);
+  node.select();
+  await persistNewNodes();
+  await loadActionsFor(entity.type);
+
+  if (result.matches.length) {
+    // Typing in a company is exactly where a duplicate arrives. Say so; do
+    // nothing about it.
+    setStatus(
+      `Added ${entity.label} — ${result.matches.length} possible duplicate` +
+        `${result.matches.length === 1 ? '' : 's'}. Right-click to check.`,
+      'warn',
+    );
+  } else {
+    setStatus(`Added ${entity.label}`);
+  }
+}
+
+async function onRelationshipCreated(edge) {
+  mergeIntoCanvas({ entities: [], relationships: [edge] });
+  setStatus('Relationship added');
+  await persistPositions();
 }
 
 /** Ask whether this node is already in the database, and offer to merge. */

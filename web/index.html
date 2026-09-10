@@ -66,6 +66,27 @@
         </div>
       </main>
 
+      <div class="modal" id="create-modal" hidden>
+        <div class="modal-panel" role="dialog" aria-labelledby="create-heading">
+          <button class="close" id="create-close" aria-label="Close">×</button>
+          <h2 id="create-heading">Add</h2>
+          <p class="subtitle" id="create-subtitle"></p>
+
+          <label class="field">
+            <span class="field-label" id="create-type-label">Type</span>
+            <select id="create-type"></select>
+          </label>
+          <button id="create-swap" class="ghost swap-direction" hidden>Swap direction</button>
+
+          <div id="create-fields" class="create-fields"></div>
+
+          <div class="modal-actions">
+            <button id="create-confirm" class="primary">Add</button>
+            <button id="create-cancel" class="ghost">Cancel</button>
+          </div>
+        </div>
+      </div>
+
       <div class="modal" id="merge-modal" hidden>
         <div class="modal-panel" role="dialog" aria-labelledby="merge-heading">
           <button class="close" id="merge-close" aria-label="Close">×</button>

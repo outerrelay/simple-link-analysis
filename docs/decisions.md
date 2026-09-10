@@ -327,3 +327,44 @@ snapshot is written first and discarded if the merge then fails.
 
 Found by accident: deleting the SQLite file under a running server produced
 exactly the bad case, a completed merge with no way back.
+
+
+## 25. Manual creation writes straight through
+
+An analyst typing a company in is asserting it. Staging that as a proposal
+would ask them to approve what they had just typed, so entities and
+relationships created by hand are written directly. The assertion still
+records that a person entered it, which is what "how do you know that?" needs.
+
+The ontology is not bypassed: the same validation applies, so an undeclared
+property or a connection the ontology forbids is refused with a reason.
+Canonical types are upserted on their key, so typing in a phone number
+somebody else already has attaches to the existing node rather than making a
+second one. A possible duplicate is reported after creation — that is exactly
+where one arrives — but never acted on.
+
+## 26. Forms are generated from the ontology
+
+`web/js/forms.js` builds a property form from the declared types: enums become
+selects, dates become date pickers, multi-valued properties a line-per-value
+box, required fields sort first, and personal data is marked. Nothing in it
+knows what a Company is, so a property added to the YAML appears on the form at
+the next reload — the rule the canvas styling already follows.
+
+The connect dialog offers only relationship types the ontology permits between
+those two entity types, in that direction, taken from the concrete source and
+target lists the ontology endpoint already returns. Where none exists, it says
+so and offers to swap rather than presenting an empty list.
+
+System relationships are excluded from it. `SAME_AS` is produced by the
+duplicate check and resolved by merging, and `MENTIONS` is attached by whatever
+read the source; offering them here would be a second, worse way to do
+something that already has a workflow.
+
+## 27. Selection order decides which way a connection points
+
+Cytoscape's `:selected` collection has no notion of the order things were
+clicked, so "connect these two" was picking an arbitrary direction. The order
+is now tracked as nodes are selected, and the connection runs from the first
+selected to the second. Anything selected by a box drag or "select neighbours"
+has no meaningful order and goes on the end.

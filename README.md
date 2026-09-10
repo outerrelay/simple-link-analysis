@@ -250,6 +250,25 @@ register(MyLookup())
 `input_types` resolves through the ontology, so declaring `LegalEntity` offers
 the action on companies and organisations alike.
 
+## Adding things by hand
+
+Right-click empty canvas for **Add an entity here**, or select two nodes and
+right-click for **Connect these two**.
+
+Both dialogs are built from the ontology. The type list is what the ontology
+declares; the fields are that type's properties, with enums as selects, dates
+as date pickers, required fields first and personal data marked; and a
+connection is only offered where the ontology permits one, in that direction.
+Add a property to `ontology.yaml` and it appears on the form at the next
+reload — no JavaScript changes.
+
+Manual creation writes **straight through** rather than staging a proposal:
+you are asserting it, so there is nothing to review. The ontology still
+applies, so an undeclared property or a forbidden connection is refused with
+the reason. Typing in a phone number somebody else already has attaches to the
+existing node. If the new record looks like a duplicate you are told, and
+nothing is done about it.
+
 ## Duplicates and merging
 
 Nothing is ever merged automatically. Two operations, deliberately separate:
