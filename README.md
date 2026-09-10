@@ -53,7 +53,7 @@ pip install -r requirements-dev.txt
 pip install -e .
 
 cp .env.example .env               # then set NEO4J_PASSWORD
-docker compose up -d               # Neo4j on 7687 (Bolt), 7474 (browser)
+docker compose up -d               # one way to get Neo4j — see below
 python -m sla.seed --reset         # optional: a small worked example
 uvicorn sla.main:app --reload
 ```
@@ -71,7 +71,7 @@ pip install -e .
 
 copy .env.example .env
 notepad .env                       :: set NEO4J_PASSWORD, then save and close
-docker compose up -d
+docker compose up -d               :: one way to get Neo4j — see below
 python -m sla.seed --reset
 uvicorn sla.main:app --reload
 ```
@@ -81,6 +81,34 @@ uvicorn sla.main:app --reload
 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once.
 
 Open <http://localhost:8000>.
+
+### Getting a Neo4j
+
+**Community Edition is enough.** The app creates only uniqueness constraints
+and plain indexes; nothing needs Enterprise, and it uses the single default
+database. Neo4j 5.x is required — the constraint syntax is 5-era.
+
+Any instance works. The app takes one connection string, so pick whichever
+suits you and set it in `.env`:
+
+| | |
+|---|---|
+| **Docker** — `docker compose up -d` | One command, reproducible. `docker-compose.yml` reads the password from `.env`. On Windows this means installing Docker Desktop, which needs WSL2 |
+| **Neo4j Desktop** | A normal installer, no Docker. Often the easiest route on Windows. Create a 5.x database, set a password, start it |
+| **Neo4j Aura** | Nothing installed at all. Hosted, so **your data leaves your machine** — fine for the seed example, worth thinking about for real case material |
+
+```ini
+# Docker or Neo4j Desktop
+NEO4J_URI=bolt://localhost:7687
+
+# Aura — note the different scheme
+NEO4J_URI=neo4j+s://xxxxxxxx.databases.neo4j.io
+```
+
+Everything after that step is identical whichever you chose. If you are not
+using Docker, skip `docker compose up -d`; the compose file is left in the
+repository because it is still the one-command route for anyone else, and for
+deploying to a server later.
 
 `docker-compose.yml` reads the password from `.env`, so it is set in one place.
 Set it **before the first `docker compose up`**: Neo4j stores the password when
@@ -116,6 +144,7 @@ the ontology are served even when the database is down.
 | Port 7687 or 8000 already in use | Something else is on it; stop it, or pass `--port` to uvicorn |
 | `Failed to build PyYAML pydantic-core` during install | pip found no wheel for your Python and tried to compile from source. Upgrade pip (`pip install --upgrade pip`) and reinstall; if it persists, your Python is newer than any released wheel and you need an older interpreter |
 | `cp` / `source` not recognised (Windows) | Those are Unix commands. Use the Windows block above: `copy` and `.venv\Scripts\activate` |
+| `docker` not recognised | Docker Desktop is a separate install on Windows and Mac. Either install it, or use Neo4j Desktop or Aura instead and skip the compose step |
 | `python3` not recognised (Windows) | Windows installs it as `python`. `py -3.12 -m venv .venv` picks a specific version if you have several |
 
 Dependencies are held to version *ranges* rather than exact pins, so pip can
