@@ -368,3 +368,25 @@ clicked, so "connect these two" was picking an arbitrary direction. The order
 is now tracked as nodes are selected, and the connection runs from the first
 selected to the second. Anything selected by a box drag or "select neighbours"
 has no meaningful order and goes on the end.
+
+
+## 28. Automated clicks are not human clicks
+
+Two bugs shipped past a browser test suite that exercised both code paths.
+
+A search result did nothing when clicked, because pressing the mouse blurred
+the input, which hid the result list 160 ms later — before a real click
+completed. Playwright's click takes about a millisecond, so the test always
+won the race and the feature looked fine. A person holding the button for a
+third of a second got nothing at all. The list now suppresses the default
+mousedown behaviour, so focus never moves and the timing race disappears.
+
+The browser's own context menu appeared on top of the canvas menu, because
+Cytoscape's `cxttap` does not suppress it. Playwright's synthetic right-click
+never opens a native menu, so the test could not have seen it.
+
+Both are the same lesson: a synthetic event is a claim about the code path,
+not about what a person experiences. Where an interaction depends on timing or
+on native browser behaviour, the test has to model that specifically — the
+regression test for the first bug holds the mouse down for 500 ms, and fails
+without the fix.

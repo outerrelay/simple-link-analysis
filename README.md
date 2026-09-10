@@ -146,6 +146,7 @@ the ontology are served even when the database is down.
 | `cp` / `source` not recognised (Windows) | Those are Unix commands. Use the Windows block above: `copy` and `.venv\Scripts\activate` |
 | `docker` not recognised | Docker Desktop is a separate install on Windows and Mac. Either install it, or use Neo4j Desktop or Aura instead and skip the compose step |
 | `sys.meta_path is None, Python is likely shutting down` | An older symptom of a failure during seeding, where the real error was lost in interpreter shutdown. Pull the latest — the seed now reports the cause instead |
+| Clicking a search result does nothing | Fixed; pull the latest. A click held longer than a moment used to be swallowed by the result list hiding itself |
 | `python3` not recognised (Windows) | Windows installs it as `python`. `py -3.12 -m venv .venv` picks a specific version if you have several |
 
 Dependencies are held to version *ranges* rather than exact pins, so pip can

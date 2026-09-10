@@ -162,6 +162,11 @@ function wireCanvasEvents() {
   cy.on('cxttap', (event) => {
     if (event.target === cy) openCanvasMenu(event.renderedPosition, event.position);
   });
+
+  // Cytoscape's cxttap does not stop the browser opening its own menu on top
+  // of ours. Suppressed on the canvas only: right-clicking a text field should
+  // still offer paste.
+  $('cy').addEventListener('contextmenu', (event) => event.preventDefault());
   cy.on('add remove', () => {
     $('canvas-hint').hidden = cy.nodes().length > 0;
     buildLegend();
@@ -834,6 +839,13 @@ function wireSearch() {
   const hide = () => {
     results.hidden = true;
   };
+
+  // Pressing the mouse on a result blurs the input, which used to hide the
+  // list before the click completed — so a click held longer than the hide
+  // delay did nothing at all. Suppressing the default mousedown behaviour
+  // keeps focus on the input, so the list is still there on mouse-up however
+  // long the button is held.
+  results.addEventListener('mousedown', (event) => event.preventDefault());
 
   input.addEventListener('input', () => {
     clearTimeout(timer);

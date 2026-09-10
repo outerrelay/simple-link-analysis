@@ -34,6 +34,8 @@ export function showMenu(position, sections, heading) {
   const menu = document.createElement('div');
   menu.className = 'context-menu';
   menu.addEventListener('click', (event) => event.stopPropagation());
+  // Right-clicking our own menu should not open the browser's on top of it.
+  menu.addEventListener('contextmenu', (event) => event.preventDefault());
 
   if (heading) {
     const head = document.createElement('div');
