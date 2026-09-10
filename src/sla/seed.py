@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import sys
 from datetime import UTC, date, datetime
 
 from neo4j import AsyncGraphDatabase
@@ -180,11 +181,7 @@ async def build(repository: GraphRepository, resolver: IdentityResolver) -> None
     print(f"  duplicate candidates proposed: {len(proposed)}")
 
 
-async def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--reset", action="store_true", help="delete everything first")
-    args = parser.parse_args()
-
+async def seed(reset: bool) -> None:
     settings = get_settings()
     ontology = load()
     driver = AsyncGraphDatabase.driver(
@@ -193,8 +190,11 @@ async def main() -> None:
         notifications_disabled_categories=["UNRECOGNIZED"],
     )
     try:
+        # Fail here rather than midway through, so a bad password or a
+        # database that is not up says so before anything is written.
+        await driver.verify_connectivity()
         await schema.apply(driver, settings.neo4j_database)
-        if args.reset:
+        if reset:
             await schema.drop_all_data(driver, settings.neo4j_database)
             print("  cleared existing data")
         repository = GraphRepository(driver, ontology, settings.neo4j_database)
@@ -205,5 +205,54 @@ async def main() -> None:
         await driver.close()
 
 
+def explain(error: Exception) -> str:
+    """Turn a driver failure into something worth reading.
+
+    Without this the traceback tangles with interpreter shutdown and the
+    useful part — usually a wrong password — is lost in the noise.
+    """
+    settings = get_settings()
+    text = str(error)
+
+    if "authentication" in text.lower() or "Unauthorized" in text:
+        return (
+            f"Neo4j at {settings.neo4j_uri} rejected the credentials.\n"
+            f"  NEO4J_USER and NEO4J_PASSWORD in .env must match the database.\n"
+            f"  Currently trying user {settings.neo4j_user!r}."
+        )
+    if "ServiceUnavailable" in type(error).__name__ or "Couldn't connect" in text:
+        return (
+            f"Nothing is listening at {settings.neo4j_uri}.\n"
+            f"  Start Neo4j, and check NEO4J_URI in .env. The Bolt port is\n"
+            f"  usually 7687 — note that 7474 is the browser, not Bolt."
+        )
+    if "constraint" in text.lower() and "index" in text.lower():
+        return (
+            f"{text}\n\n"
+            f"  The database predates the current ontology. Run the matching\n"
+            f"  script in migrations/, or use an empty database."
+        )
+    return f"{type(error).__name__}: {text}"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--reset", action="store_true", help="delete everything first")
+    args = parser.parse_args()
+
+    # On Windows the default proactor loop leaves the async driver's sockets to
+    # be cleaned up during interpreter shutdown, which surfaces as
+    # "sys.meta_path is None" and hides whatever actually went wrong.
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+    try:
+        asyncio.run(seed(args.reset))
+    except Exception as exc:  # noqa: BLE001 - the point is a readable message
+        print(f"\nCould not seed:\n  {explain(exc)}", file=sys.stderr)
+        return 1
+    return 0
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    raise SystemExit(main())
