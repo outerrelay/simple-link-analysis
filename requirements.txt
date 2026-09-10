@@ -1,9 +1,13 @@
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-pydantic==2.10.4
-pydantic-settings==2.7.0
-neo4j==5.27.0
-SQLAlchemy==2.0.36
-PyYAML==6.0.2
-httpx==0.28.1
-python-multipart==0.0.20
+# Ranges rather than exact pins: an exact pin has wheels only for the Python
+# versions that existed when it was released, so a newer interpreter falls back
+# to building from source and needs a C compiler and a Rust toolchain. Majors
+# are held, so upgrades stay compatible.
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.34,<1.0
+pydantic>=2.10,<3.0
+pydantic-settings>=2.7,<3.0
+neo4j>=5.27,<6.0
+SQLAlchemy>=2.0.36,<3.0
+PyYAML>=6.0.2,<7.0
+httpx>=0.28,<1.0
+python-multipart>=0.0.20,<1.0

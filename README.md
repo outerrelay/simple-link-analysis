@@ -37,7 +37,7 @@ language-model extraction — and nothing enters the database until you accept i
 
 ## Getting started
 
-Requires **Python 3.11+** and **Docker** (for Neo4j).
+Requires **Python 3.11 or later** and **Docker** (for Neo4j).
 
 ```bash
 # The work is on a feature branch; main is still empty.
@@ -90,6 +90,12 @@ the ontology are served even when the database is down.
 | `degraded`, authentication failure | `.env` password changed after the volume was created. `docker compose down -v`, then up again |
 | `constraint that cannot be created` on startup | The database predates the current ontology. Run the matching script in `migrations/` |
 | Port 7687 or 8000 already in use | Something else is on it; stop it, or pass `--port` to uvicorn |
+| `Failed to build PyYAML pydantic-core` during install | pip found no wheel for your Python and tried to compile from source. Upgrade pip (`pip install --upgrade pip`) and reinstall; if it persists, your Python is newer than any released wheel and you need an older interpreter |
+
+Dependencies are held to version *ranges* rather than exact pins, so pip can
+pick a release with wheels for whichever Python you have. An exact pin only
+has wheels for the interpreters that existed when it was published, which is
+what makes installs fail on a new Python with a compiler error.
 
 ## Working with the ontology
 
